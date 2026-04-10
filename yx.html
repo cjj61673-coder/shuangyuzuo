@@ -519,9 +519,9 @@
                     // 获取相关记忆
                     let memoryContext = '';
                     if (flowType === 'chat') {
-                        const relevantMemories = getRelevantMemories(npc.id, '');
+                        const relevantMemories = getRelevantMemories(npc.id, '') || [];
                         if (relevantMemories.length > 0) {
-                            memoryContext = `\n[相关记忆]: ${relevantMemories.map(mem => mem.content).join('; ')}`;
+                            memoryContext = `\n[相关记忆]: ${relevantMemories.map(mem => mem?.content || '').join('; ')}`;
                         }
                     }
                     
@@ -598,7 +598,7 @@
                     }
                     else if(block.type === 'character' && npc) finalPrompt += `\n${processTavernMacros(charFull)}\n`;
                     else if(block.type === 'map' && npc) finalPrompt += `\n[环境变量与记忆]\n${processTavernMacros(envFull)}\n`;
-                    else if(block.type === 'logs') finalPrompt += `\n【行动记录】：\n${extraLogs.join('\n')}\n`;
+                    else if(block.type === 'logs') finalPrompt += `\n【行动记录】：\n${(extraLogs || []).join('\n')}\n`;
                 });
 
                 return applyRegex(finalPrompt);
@@ -893,8 +893,8 @@
 
                 try {
                     // 获取相关记忆
-                    const relevantMemories = getRelevantMemories(activeNpcId, inputText);
-                    const memoryContext = relevantMemories.map(mem => mem.content).join('; ');
+                    const relevantMemories = getRelevantMemories(activeNpcId, inputText) || [];
+                    const memoryContext = relevantMemories.map(mem => mem?.content || '').join('; ');
                     
                     const sysPrompt = buildSystemPrompt('chat', npc, []);
                     let history = [];
