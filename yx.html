@@ -133,10 +133,34 @@
                   mesExamples: '<START>\n{{user}}: 小雅，早上好呀。\n{{char}}: *脸颊微红，轻轻挥手* 早、早上好，{{user}}。今天的天气真好呢。',
                   firstMsgEnabled: true, firstMsg: '啊，是你呀！今天天气真好，你也是出来散步的吗？', 
                   x: 2, y: 2, levelId: 'cityA', color: 'text-pink-400', bg: 'bg-pink-500/20',
-                  apiMain: { baseUrl: 'https://api.openai.com/v1', apiKey: '', model: '', customModel: false }
+                  apiMain: { baseUrl: 'https://api.openai.com/v1', apiKey: '', model: '', customModel: false },
+                  memorySystem: {
+                    coreMemories: [],      // 核心记忆（5级）
+                    importantMemories: [], // 重要记忆（4级）
+                    recentMemories: [],    // 近期记忆（3级）
+                    minorMemories: [],     // 次要记忆（2级）
+                    trivialMemories: []    // 琐事记忆（1级）
+                  },
+                  memoryAPI: {
+                    baseUrl: 'https://api.openai.com/v1',
+                    apiKey: '',
+                    model: ''
+                  }
                 }
             ],
-            currentLevelId: 'cityA'
+            currentLevelId: 'cityA',
+            godMemorySystem: {
+                globalEvents: [],      // 全局事件
+                characterInteractions: {}, // 各角色互动记录
+                storyChapters: [],     // 故事章节
+                lastSummaryTime: '2024-05-20 12:00',
+                summaryInterval: 60,   // 总结间隔（分钟）
+                memoryAPI: {
+                    baseUrl: 'https://api.openai.com/v1',
+                    apiKey: '',
+                    model: ''
+                }
+            }
         };
 
         const ExecutableBlock = ({ htmlCode }) => {
@@ -220,6 +244,205 @@
 
             const getBaseEndpoint = (url) => url.trim().replace(/\/+$/, '').replace(/\/chat\/completions$/, '');
 
+            // --- 记忆系统工具函数 ---
+            const generateMemoryId = () => 'mem_' + generateId();
+            
+            const rateMemory = (content, context, characterId) => {
+                // 简单的记忆评分算法
+                // 基于内容长度、情感词汇和关键词
+                let score = 1;
+                
+                // 内容长度评分
+                if (content.length > 50) score += 1;
+                if (content.length > 100) score += 1;
+                
+                // 情感词汇评分
+                const positiveEmotions = ['喜欢', '爱', '感谢', '开心', '兴奋'];
+                const negativeEmotions = ['讨厌', '恨', '生气', '难过', '悲伤'];
+                const strongEmotions = positiveEmotions.concat(negativeEmotions);
+                
+                for (const emotion of strongEmotions) {
+                    if (content.includes(emotion) || context.includes(emotion)) {
+                        score += 1;
+                        break;
+                    }
+                }
+                
+                // 关键词评分
+                const keyWords = ['重要', '第一次', '永远', '承诺', '告别', '危机'];
+                for (const word of keyWords) {
+                    if (content.includes(word) || context.includes(word)) {
+                        score += 1;
+                        break;
+                    }
+                }
+                
+                return Math.min(5, score);
+            };
+            
+            const addMemory = (npcId, content, context = '') => {
+                const npc = data.npcs.find(n => n.id === npcId);
+                if (!npc) return;
+                
+                const score = rateMemory(content, context, npcId);
+                const memoryItem = {
+                    id: generateMemoryId(),
+                    content: content,
+                    timestamp: formatTime(data.time),
+                    level: score,
+                    emotion: 'neutral',
+                    context: context,
+                    relatedEvents: []
+                };
+                
+                setData(prev => {
+                    const updatedNpcs = prev.npcs.map(n => {
+                        if (n.id === npcId) {
+                            const updatedMemorySystem = { ...n.memorySystem };
+                            
+                            // 根据评分添加到相应的记忆数组
+                            switch (score) {
+                                case 5:
+                                    updatedMemorySystem.coreMemories.push(memoryItem);
+                                    break;
+                                case 4:
+                                    updatedMemorySystem.importantMemories.push(memoryItem);
+                                    break;
+                                case 3:
+                                    updatedMemorySystem.recentMemories.push(memoryItem);
+                                    break;
+                                case 2:
+                                    updatedMemorySystem.minorMemories.push(memoryItem);
+                                    break;
+                                default:
+                                    updatedMemorySystem.trivialMemories.push(memoryItem);
+                            }
+                            
+                            return { ...n, memorySystem: updatedMemorySystem };
+                        }
+                        return n;
+                    });
+                    return { ...prev, npcs: updatedNpcs };
+                });
+            };
+            
+            const organizeMemories = (npcId) => {
+                const npc = data.npcs.find(n => n.id === npcId);
+                if (!npc) return;
+                
+                setData(prev => {
+                    const updatedNpcs = prev.npcs.map(n => {
+                        if (n.id === npcId) {
+                            const updatedMemorySystem = { ...n.memorySystem };
+                            
+                            // 降级记忆
+                            // 1-2级记忆：7天未提及自动降级
+                            // 3级记忆：30天未提及自动降级
+                            const now = data.time;
+                            
+                            // 处理琐事记忆（1级）
+                            updatedMemorySystem.trivialMemories = updatedMemorySystem.trivialMemories.filter(mem => {
+                                const memTime = {
+                                    year: parseInt(mem.timestamp.substring(0, 4)),
+                                    month: parseInt(mem.timestamp.substring(5, 7)),
+                                    day: parseInt(mem.timestamp.substring(8, 10)),
+                                    hour: parseInt(mem.timestamp.substring(11, 13)),
+                                    minute: parseInt(mem.timestamp.substring(14, 16))
+                                };
+                                return getTimeDiff(now, memTime) < 7 * 24 * 60; // 7天
+                            });
+                            
+                            // 处理次要记忆（2级）
+                            updatedMemorySystem.minorMemories = updatedMemorySystem.minorMemories.filter(mem => {
+                                const memTime = {
+                                    year: parseInt(mem.timestamp.substring(0, 4)),
+                                    month: parseInt(mem.timestamp.substring(5, 7)),
+                                    day: parseInt(mem.timestamp.substring(8, 10)),
+                                    hour: parseInt(mem.timestamp.substring(11, 13)),
+                                    minute: parseInt(mem.timestamp.substring(14, 16))
+                                };
+                                if (getTimeDiff(now, memTime) >= 7 * 24 * 60) {
+                                    // 降级到琐事记忆
+                                    updatedMemorySystem.trivialMemories.push({ ...mem, level: 1 });
+                                    return false;
+                                }
+                                return true;
+                            });
+                            
+                            // 处理近期记忆（3级）
+                            updatedMemorySystem.recentMemories = updatedMemorySystem.recentMemories.filter(mem => {
+                                const memTime = {
+                                    year: parseInt(mem.timestamp.substring(0, 4)),
+                                    month: parseInt(mem.timestamp.substring(5, 7)),
+                                    day: parseInt(mem.timestamp.substring(8, 10)),
+                                    hour: parseInt(mem.timestamp.substring(11, 13)),
+                                    minute: parseInt(mem.timestamp.substring(14, 16))
+                                };
+                                if (getTimeDiff(now, memTime) >= 30 * 24 * 60) {
+                                    // 降级到次要记忆
+                                    updatedMemorySystem.minorMemories.push({ ...mem, level: 2 });
+                                    return false;
+                                }
+                                return true;
+                            });
+                            
+                            return { ...n, memorySystem: updatedMemorySystem };
+                        }
+                        return n;
+                    });
+                    return { ...prev, npcs: updatedNpcs };
+                });
+            };
+            
+            const getRelevantMemories = (npcId, context = '', limit = 5) => {
+                const npc = data.npcs.find(n => n.id === npcId);
+                if (!npc) return [];
+                
+                // 合并所有记忆
+                const allMemories = [
+                    ...npc.memorySystem.coreMemories,
+                    ...npc.memorySystem.importantMemories,
+                    ...npc.memorySystem.recentMemories,
+                    ...npc.memorySystem.minorMemories,
+                    ...npc.memorySystem.trivialMemories
+                ];
+                
+                // 根据相关性排序
+                const scoredMemories = allMemories.map(mem => {
+                    let score = mem.level;
+                    
+                    // 上下文匹配
+                    if (context) {
+                        const contextWords = context.split(' ');
+                        for (const word of contextWords) {
+                            if (mem.content.includes(word) || mem.context.includes(word)) {
+                                score += 0.5;
+                            }
+                        }
+                    }
+                    
+                    // 时间权重
+                    const memTime = {
+                        year: parseInt(mem.timestamp.substring(0, 4)),
+                        month: parseInt(mem.timestamp.substring(5, 7)),
+                        day: parseInt(mem.timestamp.substring(8, 10)),
+                        hour: parseInt(mem.timestamp.substring(11, 13)),
+                        minute: parseInt(mem.timestamp.substring(14, 16))
+                    };
+                    const timeDiff = getTimeDiff(data.time, memTime);
+                    if (timeDiff < 24 * 60) score += 2; // 今天的记忆
+                    else if (timeDiff < 7 * 24 * 60) score += 1; // 最近一周
+                    
+                    return { ...mem, relevanceScore: score };
+                });
+                
+                // 按相关性排序并返回前N个
+                return scoredMemories
+                    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+                    .slice(0, limit)
+                    .map(mem => mem);
+            };
+
             // --- 日志操作辅助函数 ---
             const addLogMessage = (npcId, message) => {
                 setLogs(prev => ({ ...prev, [npcId]: [...(prev[npcId] || []), message] }));
@@ -292,7 +515,17 @@
                 
                 if (npc) {
                     const cMap = data.maps[npc.levelId];
-                    envFull = `[当前位置]: ${cMap.name} (尺寸: ${cMap.w}x${cMap.h})\n[环境描述]: ${cMap.desc}\n[周围可见地标]: ${cMap.nodes.map(n=>`${n.name}(坐标:${n.x},${n.y})`).join(', ') || '暂无'}\n[系统时间]: ${formatTime(data.time)}\n[角色私有记忆]: ${npc.memory || '无特殊记忆'}\n[当前坐标]: X:${npc.x}, Y:${npc.y}`;
+                    
+                    // 获取相关记忆
+                    let memoryContext = '';
+                    if (flowType === 'chat') {
+                        const relevantMemories = getRelevantMemories(npc.id, '');
+                        if (relevantMemories.length > 0) {
+                            memoryContext = `\n[相关记忆]: ${relevantMemories.map(mem => mem.content).join('; ')}`;
+                        }
+                    }
+                    
+                    envFull = `[当前位置]: ${cMap.name} (尺寸: ${cMap.w}x${cMap.h})\n[环境描述]: ${cMap.desc}\n[周围可见地标]: ${cMap.nodes.map(n=>`${n.name}(坐标:${n.x},${n.y})`).join(', ') || '暂无'}\n[系统时间]: ${formatTime(data.time)}\n[角色私有记忆]: ${npc.memory || '无特殊记忆'}${memoryContext}\n[当前坐标]: X:${npc.x}, Y:${npc.y}`;
                     charFull = `[角色设定: ${npc.name}]\n` + 
                                (npc.desc ? `描述: ${npc.desc}\n` : '') + 
                                (npc.personality ? `性格: ${npc.personality}\n` : '') + 
@@ -505,6 +738,8 @@
                         const actionMsg = createActionMessage(aiReplyRaw);
                         if (actionMsg.content) {
                             addLogMessage(npc.id, actionMsg);
+                            // 添加行动记忆
+                            addMemory(npc.id, actionMsg.content, `我在 ${data.maps[npc.levelId].name} 行动: ${actionMsg.content}`);
                         }
 
                         setData(p => {
@@ -657,6 +892,10 @@
                 setIsTyping(true);
 
                 try {
+                    // 获取相关记忆
+                    const relevantMemories = getRelevantMemories(activeNpcId, inputText);
+                    const memoryContext = relevantMemories.map(mem => mem.content).join('; ');
+                    
                     const sysPrompt = buildSystemPrompt('chat', npc, []);
                     let history = [];
                     if (data.promptFlowChat.find(f => f.type === 'history')?.enabled) {
@@ -669,6 +908,10 @@
                     const aiReplyRaw = await callAPI(npc.apiMain, sysPrompt, history);
                     const aiMsg = createChatMessage('assistant', aiReplyRaw);
                     addLogMessage(activeNpcId, aiMsg);
+                    
+                    // 添加记忆
+                    addMemory(activeNpcId, inputText.trim(), `玩家说: ${inputText.trim()}`);
+                    addMemory(activeNpcId, aiMsg.content, `我说: ${aiMsg.content}`);
                 } catch (e) {
                     const errorMsg = `[通信错误]: ${e.message}`;
                     addLogMessage(activeNpcId, createChatMessage('assistant', errorMsg));
@@ -2139,6 +2382,128 @@
                                     <div className="p-3">
                                         <div className="text-[9px] text-slate-500 mb-2 leading-relaxed">这是目前依据【{previewTab==='chat'?'对话提示词流':'行动提示词流'}】配置，最终拼接后发给 AI 的 System Prompt（未包含对话记录）：</div>
                                         <textarea readOnly value={previewPrompt} rows={12} className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-[10px] font-mono text-emerald-300/80 outline-none resize-none leading-relaxed no-scrollbar" />
+                                    </div>
+                                </div>
+
+                                {/* 记忆管理 */}
+                                <div className="mt-4 bg-amber-950/30 border border-amber-500/20 rounded-xl overflow-hidden">
+                                    <div className="bg-slate-800/80 p-3 border-b border-slate-700 flex justify-between items-center">
+                                        <div className="text-[11px] font-bold text-amber-400 flex items-center"><Icon.Book c="w-4 h-4 mr-1" /> 记忆管理</div>
+                                        <button onClick={()=>organizeMemories(npc.id)} className="text-[10px] text-amber-400 hover:bg-amber-900/30 px-2 py-1 rounded">整理记忆</button>
+                                    </div>
+                                    <div className="p-3 bg-slate-900/30">
+                                        <div className="flex space-x-1 mb-3">
+                                            <button onClick={()=>setNpcPreviewTabs(p=>({...p, [npc.id]: 'memory5'}))} className={`px-2 py-1 text-[10px] rounded ${npcPreviewTabs[npc.id] === 'memory5' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-400'}`}>核心记忆 (5级)</button>
+                                            <button onClick={()=>setNpcPreviewTabs(p=>({...p, [npc.id]: 'memory4'}))} className={`px-2 py-1 text-[10px] rounded ${npcPreviewTabs[npc.id] === 'memory4' ? 'bg-orange-600 text-white' : 'bg-slate-700 text-slate-400'}`}>重要记忆 (4级)</button>
+                                            <button onClick={()=>setNpcPreviewTabs(p=>({...p, [npc.id]: 'memory3'}))} className={`px-2 py-1 text-[10px] rounded ${npcPreviewTabs[npc.id] === 'memory3' ? 'bg-yellow-600 text-white' : 'bg-slate-700 text-slate-400'}`}>近期记忆 (3级)</button>
+                                            <button onClick={()=>setNpcPreviewTabs(p=>({...p, [npc.id]: 'memory2'}))} className={`px-2 py-1 text-[10px] rounded ${npcPreviewTabs[npc.id] === 'memory2' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-400'}`}>次要记忆 (2级)</button>
+                                            <button onClick={()=>setNpcPreviewTabs(p=>({...p, [npc.id]: 'memory1'}))} className={`px-2 py-1 text-[10px] rounded ${npcPreviewTabs[npc.id] === 'memory1' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'}`}>琐事记忆 (1级)</button>
+                                        </div>
+                                        
+                                        <div className="mb-3">
+                                            <div className="flex space-x-2">
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="输入新记忆内容" 
+                                                    id={`memory-content-${npc.id}`}
+                                                    className="flex-1 bg-slate-800 border border-slate-700 rounded-lg text-xs p-2 outline-none focus:border-amber-500"
+                                                />
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="上下文" 
+                                                    id={`memory-context-${npc.id}`}
+                                                    className="flex-1 bg-slate-800 border border-slate-700 rounded-lg text-xs p-2 outline-none focus:border-amber-500"
+                                                />
+                                                <button 
+                                                    onClick={()=>{
+                                                        const content = document.getElementById(`memory-content-${npc.id}`).value;
+                                                        const context = document.getElementById(`memory-context-${npc.id}`).value;
+                                                        if (content) {
+                                                            addMemory(npc.id, content, context);
+                                                            document.getElementById(`memory-content-${npc.id}`).value = '';
+                                                            document.getElementById(`memory-context-${npc.id}`).value = '';
+                                                        }
+                                                    }}
+                                                    className="bg-amber-600/20 text-amber-400 border border-amber-500/50 px-3 rounded-lg text-[10px] font-bold hover:bg-amber-600 hover:text-white transition whitespace-nowrap"
+                                                >
+                                                    添加
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="max-h-64 overflow-y-auto">
+                                            {(() => {
+                                                let memories = [];
+                                                switch(npcPreviewTabs[npc.id]) {
+                                                    case 'memory5':
+                                                        memories = npc.memorySystem.coreMemories;
+                                                        break;
+                                                    case 'memory4':
+                                                        memories = npc.memorySystem.importantMemories;
+                                                        break;
+                                                    case 'memory3':
+                                                        memories = npc.memorySystem.recentMemories;
+                                                        break;
+                                                    case 'memory2':
+                                                        memories = npc.memorySystem.minorMemories;
+                                                        break;
+                                                    case 'memory1':
+                                                        memories = npc.memorySystem.trivialMemories;
+                                                        break;
+                                                    default:
+                                                        memories = [];
+                                                }
+                                                
+                                                if (memories.length === 0) {
+                                                    return <div className="text-center text-slate-500 text-[11px] py-4">暂无记忆记录</div>;
+                                                }
+                                                
+                                                return memories.map(mem => (
+                                                    <div key={mem.id} className="mb-3 pb-3 border-b border-slate-700/30 last:border-0">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-[10px] text-amber-400 font-bold">[{mem.timestamp}]</span>
+                                                            <button 
+                                                                onClick={()=>{
+                                                                    if(confirm('确定删除这条记忆？')){
+                                                                        setData(prev => {
+                                                                            const updatedNpcs = prev.npcs.map(n => {
+                                                                                if (n.id === npc.id) {
+                                                                                    const updatedMemorySystem = { ...n.memorySystem };
+                                                                                    switch(mem.level) {
+                                                                                        case 5:
+                                                                                            updatedMemorySystem.coreMemories = updatedMemorySystem.coreMemories.filter(m => m.id !== mem.id);
+                                                                                            break;
+                                                                                        case 4:
+                                                                                            updatedMemorySystem.importantMemories = updatedMemorySystem.importantMemories.filter(m => m.id !== mem.id);
+                                                                                            break;
+                                                                                        case 3:
+                                                                                            updatedMemorySystem.recentMemories = updatedMemorySystem.recentMemories.filter(m => m.id !== mem.id);
+                                                                                            break;
+                                                                                        case 2:
+                                                                                            updatedMemorySystem.minorMemories = updatedMemorySystem.minorMemories.filter(m => m.id !== mem.id);
+                                                                                            break;
+                                                                                        default:
+                                                                                            updatedMemorySystem.trivialMemories = updatedMemorySystem.trivialMemories.filter(m => m.id !== mem.id);
+                                                                                    }
+                                                                                    return { ...n, memorySystem: updatedMemorySystem };
+                                                                                }
+                                                                                return n;
+                                                                            });
+                                                                            return { ...prev, npcs: updatedNpcs };
+                                                                        });
+                                                                    }
+                                                                }}
+                                                                className="text-red-400 p-1 hover:bg-red-900/30 rounded"
+                                                            >
+                                                                <Icon.Trash c="w-4 h-4"/>
+                                                            </button>
+                                                        </div>
+                                                        <div className="text-[12px] text-slate-300 leading-relaxed mb-1">{mem.content}</div>
+                                                        {mem.context && <div className="text-[10px] text-slate-500 italic">上下文: {mem.context}</div>}
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
                                     </div>
                                 </div>
 
