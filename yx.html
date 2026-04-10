@@ -11,28 +11,180 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
-        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --secondary-light: #34d399;
+            --secondary-dark: #059669;
+            --accent: #f472b6;
+            --accent-light: #f9a8d4;
+            --accent-dark: #ec4899;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --surface-light: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --glow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        
+        body { 
+            -webkit-font-smoothing: antialiased; 
+            -moz-osx-font-smoothing: grayscale; 
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 600;
+        }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes popIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); } 50% { box-shadow: 0 0 20px 5px rgba(99, 102, 241, 0.6); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         .animate-slide-up { animation: slideUp 0.3s ease-out; }
         .animate-pop-in { animation: popIn 0.2s ease-out; }
+        .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        
         .select-none-all { -webkit-touch-callout: none; user-select: none; }
         .msg-bubble { -webkit-touch-callout: none; user-select: text; }
-        .glass-panel { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
         
-        .markdown-body pre { background-color: rgba(15, 23, 42, 0.9); color: #e2e8f0; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin: 0.5rem 0; border: 1px solid rgba(255,255,255,0.1); }
-        .markdown-body code { font-family: monospace; background-color: rgba(0,0,0,0.4); padding: 0.15rem 0.3rem; border-radius: 0.25rem; font-size: 0.9em; }
-        .executed-code-container { margin-top: 0.5rem; padding: 0.5rem; border: 1px dashed rgba(52, 211, 153, 0.5); border-radius: 0.5rem; background: rgba(52, 211, 153, 0.05); }
-        .action-log-bubble { background: repeating-linear-gradient(45deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 10px, transparent 10px, transparent 20px); }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
         
-        select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em; padding-right: 2rem; }
+        .glass-panel:hover {
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .markdown-body pre {
+            background-color: rgba(15, 23, 42, 0.9);
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .markdown-body code {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 0.15rem 0.3rem;
+            border-radius: 0.25rem;
+            font-size: 0.9em;
+        }
+        
+        .executed-code-container {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border: 1px dashed rgba(52, 211, 153, 0.5);
+            border-radius: 0.5rem;
+            background: rgba(52, 211, 153, 0.05);
+        }
+        
+        .action-log-bubble {
+            background: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 10px, transparent 10px, transparent 20px);
+        }
+        
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
+            padding-right: 2rem;
+        }
+        
+        .btn {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .map-tile {
+            transition: all 0.2s ease;
+        }
+        
+        .map-tile:hover {
+            transform: scale(1.05);
+        }
+        
+        .npc-avatar {
+            transition: all 0.3s ease;
+        }
+        
+        .npc-avatar:hover {
+            transform: scale(1.1);
+            box-shadow: var(--glow);
+        }
+        
+        .input-field {
+            transition: all 0.3s ease;
+        }
+        
+        .input-field:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+        
+        .bg-gradient-custom {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+        
+        .bg-gradient-accent {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        }
+        
+        .text-gradient {
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-gray-900 via-slate-900 to-black min-h-screen text-gray-200 overflow-hidden">
+<body class="bg-gradient-custom min-h-screen text-gray-200 overflow-hidden">
     <div id="root" class="h-screen w-full flex justify-center"></div>
 
     <script type="text/babel">
@@ -184,6 +336,7 @@
             const [editingMessageId, setEditingMessageId] = useState(null);
             const [editingMessageContent, setEditingMessageContent] = useState('');
             const [regeneratingMessageId, setRegeneratingMessageId] = useState(null);
+            const [showHelp, setShowHelp] = useState(false);
             
             const logScrollRef = useRef(null);
             const lastNpcTickRef = useRef(data.time);
@@ -1555,26 +1708,27 @@
 
                         if (!isBlocked) {
                             grid.push(
-                                <div key={`${x}-${y}`} className={`w-full h-full border border-slate-700/10 flex items-center justify-center relative transition-colors duration-300 bg-slate-800/80
-                                    ${nodeOnTile ? 'bg-indigo-900/20' : ''} 
-                                    ${isAdjacent ? 'ring-2 ring-blue-400 ring-inset cursor-pointer z-10 bg-blue-900/20' : ''}`}
+                                <div key={`${x}-${y}`} className={`w-full h-full border border-slate-700/10 flex items-center justify-center relative transition-all duration-300 bg-slate-800/80 hover:bg-slate-700/60
+                                    ${nodeOnTile ? 'bg-indigo-900/30' : ''} 
+                                    ${isAdjacent ? 'ring-2 ring-blue-400 ring-inset cursor-pointer z-10 bg-blue-900/30' : ''}
+                                    ${isPlayer ? 'ring-3 ring-blue-500/50' : ''}`}
                                     onClick={() => isAdjacent && npcOnTile ? handleInteract(npcOnTile) : null}
                                     title={nodeOnTile ? `${nodeOnTile.name}${nodeOnTile.desc ? ' - ' + nodeOnTile.desc : ''}` : ''}
                                 >
-                                    {nodeOnTile && <div className="absolute top-1 text-[9px] text-indigo-300/80 font-bold tracking-wider">{nodeOnTile.name}</div>}
-                                    {nodeOnTile && nodeOnTile.targetLevel && <Icon.Map c="w-1/2 h-1/2 text-indigo-500 opacity-20" />}
+                                    {nodeOnTile && <div className="absolute top-1 text-[9px] text-indigo-300 font-bold tracking-wider drop-shadow-md">{nodeOnTile.name}</div>}
+                                    {nodeOnTile && nodeOnTile.targetLevel && <Icon.Map c="w-1/2 h-1/2 text-indigo-500 opacity-30 animate-pulse" />}
                                     
-                                    {isPlayer && <div className="absolute w-3/4 h-3/4 bg-blue-500/20 rounded-full blur-md"></div>}
+                                    {isPlayer && <div className="absolute w-3/4 h-3/4 bg-blue-500/30 rounded-full blur-md animate-pulse-glow"></div>}
                                     {isPlayer && (
-                                        <div className="absolute flex items-center justify-center">
+                                        <div className="absolute flex items-center justify-center animate-float">
                                             <HeroSprite direction={playerDirection} frame={playerWalkFrame} size={48} />
                                         </div>
                                     )}
                                     
                                     {npcOnTile && (
-                                        <div className={`flex flex-col items-center absolute ${npcOnTile.bg} rounded-full p-1.5`}>
-                                            {npcOnTile.gender === 'male' ? <Icon.Male c={`${npcOnTile.color} w-6 h-6`} /> : <Icon.Female c={`${npcOnTile.color} w-6 h-6 drop-shadow-[0_0_8px_currentColor]`} />}
-                                            {isAdjacent && <span className="absolute -top-7 bg-slate-800 text-blue-300 border border-slate-600 text-[10px] px-2 py-0.5 rounded-md shadow-xl whitespace-nowrap font-bold">💬 对话</span>}
+                                        <div className={`flex flex-col items-center absolute ${npcOnTile.bg} rounded-full p-1.5 npc-avatar`}>
+                                            {npcOnTile.gender === 'male' ? <Icon.Male c={`${npcOnTile.color} w-6 h-6 drop-shadow-[0_0_8px_currentColor]`} /> : <Icon.Female c={`${npcOnTile.color} w-6 h-6 drop-shadow-[0_0_8px_currentColor]`} />}
+                                            {isAdjacent && <span className="absolute -top-7 bg-slate-800 text-blue-300 border border-slate-600 text-[10px] px-2 py-0.5 rounded-md shadow-xl whitespace-nowrap font-bold animate-fade-in">💬 对话</span>}
                                         </div>
                                     )}
                                 </div>
@@ -1589,31 +1743,45 @@
 
                 return (
                     <div className="flex flex-col items-center w-full max-w-md mx-auto h-full pt-4 px-3 select-none-all animate-fade-in">
-                        <div className="w-full flex flex-col glass-panel p-3 rounded-2xl mb-4 shadow-xl">
-                            <div className="flex justify-between items-center mb-3 border-b border-slate-700/50 pb-2">
-                                <h1 className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">{currentMap.name}</h1>
+                        <div className="w-full flex flex-col glass-panel p-4 rounded-2xl mb-4 shadow-2xl">
+                            <div className="flex justify-between items-center mb-3 border-b border-slate-700/50 pb-3">
+                                <h1 className="text-xl font-bold text-gradient">{currentMap.name}</h1>
                                 <div className="flex space-x-2">
-                                    <button onClick={() => setView('calendar')} className="p-2 bg-yellow-600/20 border border-yellow-500/30 hover:bg-yellow-600/40 text-yellow-400 rounded-xl transition-all shadow-md"><Icon.Calendar c="w-5 h-5"/></button>
-                                    <button onClick={() => setView('settings')} className="p-2 bg-slate-800/80 hover:bg-slate-700 rounded-xl transition-all text-slate-300"><Icon.Settings c="w-5 h-5" /></button>
+                                    <button onClick={() => setView('calendar')} className="btn p-2 bg-yellow-600/20 border border-yellow-500/30 hover:bg-yellow-600/40 text-yellow-400 rounded-xl transition-all shadow-md"><Icon.Calendar c="w-5 h-5"/></button>
+                                    <button onClick={() => setView('settings')} className="btn p-2 bg-slate-800/80 hover:bg-slate-700 rounded-xl transition-all text-slate-300"><Icon.Settings c="w-5 h-5" /></button>
+                                    <button onClick={() => setShowHelp(!showHelp)} className="btn p-2 bg-purple-600/20 border border-purple-500/30 hover:bg-purple-600/40 text-purple-400 rounded-xl transition-all shadow-md"><Icon.Book c="w-5 h-5" /></button>
                                 </div>
                             </div>
-                            <div className="flex justify-between text-xs text-slate-300 font-bold bg-slate-900/50 p-2 rounded-lg items-center">
+                            <div className="flex justify-between text-xs text-slate-300 font-bold bg-slate-900/50 p-3 rounded-lg items-center">
                                 <span className="flex items-center text-indigo-300"><Icon.Clock c="w-4 h-4 mr-1.5"/> {formatTime(data.time)}</span>
-                                {currentMap.parent && <button onClick={() => setData(p => ({...p, currentLevelId: p.maps[p.currentLevelId].parent, player: {...p.player, levelId: p.maps[p.currentLevelId].parent}}))} className="text-blue-400 border border-blue-500/30 px-3 py-1 rounded bg-blue-900/20 hover:bg-blue-900/40 transition">返回大地图</button>}
+                                {currentMap.parent && <button onClick={() => setData(p => ({...p, currentLevelId: p.maps[p.currentLevelId].parent, player: {...p.player, levelId: p.maps[p.currentLevelId].parent}}))} className="btn text-blue-400 border border-blue-500/30 px-3 py-1 rounded bg-blue-900/20 hover:bg-blue-900/40 transition">返回大地图</button>}
                             </div>
                         </div>
 
-                        <div className="w-full aspect-square rounded-3xl overflow-hidden grid shadow-2xl p-1 relative" style={{ gridTemplateColumns: `repeat(${currentMap.w}, minmax(0, 1fr))`, background: 'transparent' }}>
+                        {showHelp && (
+                            <div className="w-full glass-panel p-4 rounded-2xl mb-4 shadow-2xl animate-slide-up">
+                                <h3 className="text-sm font-bold text-purple-300 mb-2">游戏操作指南</h3>
+                                <ul className="text-xs text-slate-400 space-y-1">
+                                    <li>• 使用方向键或 WASD 移动角色</li>
+                                    <li>• 靠近 NPC 时点击进行对话</li>
+                                    <li>• 点击地图节点进入不同区域</li>
+                                    <li>• 查看日历了解游戏时间</li>
+                                    <li>• 在设置中配置 API 和系统参数</li>
+                                </ul>
+                            </div>
+                        )}
+
+                        <div className="w-full aspect-square rounded-3xl overflow-hidden grid shadow-2xl p-1 relative bg-slate-900/80 border border-slate-700/30">
                             {grid}
                         </div>
 
-                        <div className="mt-8 grid grid-cols-3 gap-3 w-56">
+                        <div className="mt-8 grid grid-cols-3 gap-3 w-60">
                             <div />
-                            <button onClick={() => handleMovePlayer(0, -1)} className="glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowUp c="w-7 h-7"/></button>
+                            <button onClick={() => handleMovePlayer(0, -1)} className="btn glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowUp c="w-7 h-7"/></button>
                             <div />
-                            <button onClick={() => handleMovePlayer(-1, 0)} className="glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowLeft c="w-7 h-7"/></button>
-                            <button onClick={() => handleMovePlayer(0, 1)} className="glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowDown c="w-7 h-7"/></button>
-                            <button onClick={() => handleMovePlayer(1, 0)} className="glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowRight c="w-7 h-7"/></button>
+                            <button onClick={() => handleMovePlayer(-1, 0)} className="btn glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowLeft c="w-7 h-7"/></button>
+                            <button onClick={() => handleMovePlayer(0, 1)} className="btn glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowDown c="w-7 h-7"/></button>
+                            <button onClick={() => handleMovePlayer(1, 0)} className="btn glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowRight c="w-7 h-7"/></button>
                         </div>
                     </div>
                 );
@@ -1630,10 +1798,13 @@
                             <div className="flex flex-col p-4 bg-slate-800/90 border-b border-slate-700/50 shrink-0 z-10">
                                 <div className="flex items-center justify-between mb-1">
                                     <div className="flex items-center space-x-3">
-                                        <div className={`${npc.bg} p-2 rounded-xl`}><Icon.Female c={`${npc.color} w-6 h-6 drop-shadow-[0_0_8px_currentColor]`} /></div>
-                                        <div><h2 className="font-bold text-slate-100 text-lg">{npc.name}</h2></div>
+                                        <div className={`${npc.bg} p-2 rounded-xl npc-avatar`}><Icon.Female c={`${npc.color} w-6 h-6 drop-shadow-[0_0_8px_currentColor]`} /></div>
+                                        <div>
+                                            <h2 className="font-bold text-slate-100 text-lg">{npc.name}</h2>
+                                            <p className="text-xs text-slate-400">{npc.personality || '暂无性格描述'}</p>
+                                        </div>
                                     </div>
-                                    <button onClick={() => setView('game')} className="p-2 hover:bg-slate-600 rounded-full text-slate-300"><Icon.X c="w-5 h-5" /></button>
+                                    <button onClick={() => setView('game')} className="btn p-2 hover:bg-slate-600 rounded-full text-slate-300"><Icon.X c="w-5 h-5" /></button>
                                 </div>
                                 <div className="text-[10px] text-slate-400 text-center uppercase tracking-wider">行动日志与对话流</div>
                             </div>
@@ -1660,7 +1831,7 @@
                                                     <button 
                                                         onClick={() => regenerateMessage(msg.id)} 
                                                         disabled={regeneratingMessageId === msg.id || isTyping}
-                                                        className="p-1.5 hover:bg-slate-700/50 rounded-lg transition-all disabled:opacity-30"
+                                                        className="btn p-1.5 hover:bg-slate-700/50 rounded-lg transition-all disabled:opacity-30"
                                                         title="重新生成"
                                                     >
                                                         {regeneratingMessageId === msg.id ? 
@@ -1671,7 +1842,7 @@
                                                     {editingMessageId === msg.id ? (
                                                         <button 
                                                             onClick={() => saveEditMessage(msg.id)}
-                                                            className="p-1.5 hover:bg-emerald-700/50 rounded-lg transition-all"
+                                                            className="btn p-1.5 hover:bg-emerald-700/50 rounded-lg transition-all"
                                                             title="保存"
                                                         >
                                                             <Icon.Save c="w-4 h-4 text-emerald-400" />
@@ -1679,7 +1850,7 @@
                                                     ) : (
                                                         <button 
                                                             onClick={() => startEditMessage(msg)}
-                                                            className="p-1.5 hover:bg-yellow-700/50 rounded-lg transition-all"
+                                                            className="btn p-1.5 hover:bg-yellow-700/50 rounded-lg transition-all"
                                                             title="编辑"
                                                         >
                                                             <Icon.Edit c="w-4 h-4 text-yellow-400" />
@@ -1687,7 +1858,7 @@
                                                     )}
                                                     <button 
                                                         onClick={() => deleteMessage(msg.id)}
-                                                        className="p-1.5 hover:bg-red-700/50 rounded-lg transition-all"
+                                                        className="btn p-1.5 hover:bg-red-700/50 rounded-lg transition-all"
                                                         title="删除"
                                                     >
                                                         <Icon.Trash c="w-4 h-4 text-red-400" />
@@ -1695,12 +1866,12 @@
                                                 </div>
                                             )}
                                             
-                                            <div className={`msg-bubble max-w-[90%] p-3.5 leading-relaxed shadow-lg ${isUser ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm' : 'bg-slate-800 border border-slate-700/50 text-slate-200 rounded-2xl rounded-tl-sm'}`}>
+                                            <div className={`msg-bubble max-w-[90%] p-3.5 leading-relaxed shadow-lg hover:shadow-xl transition-all duration-300 ${isUser ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm' : 'bg-slate-800 border border-slate-700/50 text-slate-200 rounded-2xl rounded-tl-sm'}`}>
                                                 {!isUser && editingMessageId === msg.id ? (
                                                     <textarea
                                                         value={editingMessageContent}
                                                         onChange={(e) => setEditingMessageContent(e.target.value)}
-                                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm outline-none focus:border-blue-500 resize-none min-h-[80px]"
+                                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm outline-none focus:border-blue-500 resize-none min-h-[80px] input-field"
                                                         autoFocus
                                                     />
                                                 ) : (
@@ -1717,7 +1888,7 @@
                                 })}
                                 {isTyping && (
                                     <div className="flex justify-start animate-fade-in">
-                                        <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl rounded-tl-sm flex space-x-1.5">
+                                        <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl rounded-tl-sm flex space-x-1.5 shadow-lg">
                                             <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></div>
                                             <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{animationDelay:'0.2s'}}></div>
                                             <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{animationDelay:'0.4s'}}></div>
@@ -1730,9 +1901,9 @@
                                 <div className="flex space-x-2 items-end">
                                     <textarea 
                                         value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDirectMessage(); } }}
-                                        placeholder={`对 ${npc.name} 说话...`} className="flex-1 px-4 py-3 bg-slate-900 border border-slate-700/50 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-500 resize-none h-12 max-h-32 no-scrollbar" disabled={isTyping}
+                                        placeholder={`对 ${npc.name} 说话...`} className="flex-1 px-4 py-3 bg-slate-900 border border-slate-700/50 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-500 resize-none h-12 max-h-32 no-scrollbar input-field" disabled={isTyping}
                                     />
-                                    <button onClick={sendDirectMessage} disabled={isTyping || !inputText.trim()} className="bg-blue-600 text-white p-3 rounded-2xl hover:bg-blue-500 disabled:opacity-50 shrink-0"><Icon.Send c="w-6 h-6" /></button>
+                                    <button onClick={sendDirectMessage} disabled={isTyping || !inputText.trim()} className="btn bg-blue-600 text-white p-3 rounded-2xl hover:bg-blue-500 disabled:opacity-50 shrink-0 transition-all duration-300"><Icon.Send c="w-6 h-6" /></button>
                                 </div>
                             </div>
                         </div>
