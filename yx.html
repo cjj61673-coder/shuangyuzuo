@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 小镇物语 - 终极上帝架构版 V10.3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
+        .animate-pop-in { animation: popIn 0.2s ease-out; }
+        .select-none-all { -webkit-touch-callout: none; user-select: none; }
+        .msg-bubble { -webkit-touch-callout: none; user-select: text; }
+        .glass-panel { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        
+        .markdown-body pre { background-color: rgba(15, 23, 42, 0.9); color: #e2e8f0; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin: 0.5rem 0; border: 1px solid rgba(255,255,255,0.1); }
+        .markdown-body code { font-family: monospace; background-color: rgba(0,0,0,0.4); padding: 0.15rem 0.3rem; border-radius: 0.25rem; font-size: 0.9em; }
+        .executed-code-container { margin-top: 0.5rem; padding: 0.5rem; border: 1px dashed rgba(52, 211, 153, 0.5); border-radius: 0.5rem; background: rgba(52, 211, 153, 0.05); }
+        .action-log-bubble { background: repeating-linear-gradient(45deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 10px, transparent 10px, transparent 20px); }
+        
+        select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em; padding-right: 2rem; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-slate-900 to-black min-h-screen text-gray-200 overflow-hidden">
+    <div id="root" class="h-screen w-full flex justify-center"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        const Icon = {
+            User: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Female: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><circle cx="12" cy="8" r="5"/><path d="M12 13v9"/><path d="M9 18h6"/></svg>,
+            Male: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><circle cx="10" cy="14" r="5"/><path d="M14 10l5-5"/><path d="M14 5h5v5"/></svg>,
+            Settings: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+            X: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+            Map: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>,
+            Book: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>,
+            Calendar: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+            Trash: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
+            Send: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+            Menu: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+            ArrowUp: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><polyline points="18 15 12 9 6 15"/></svg>,
+            ArrowDown: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><polyline points="6 9 12 15 18 9"/></svg>,
+            ArrowLeft: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><polyline points="15 18 9 12 15 6"/></svg>,
+            ArrowRight: ({c}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><polyline points="9 18 15 12 9 6"/></svg>,
+            Clock: ({ c }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            Eye: ({ c }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+            EyeOff: ({ c }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>,
+            Plus: ({ c }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+            Save: ({ c }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+            Terminal: ({ c }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={c}><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>,
+            Activity: ({ c }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={c}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+            Refresh: ({ c }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={c}><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>,
+            Edit: ({ c }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={c}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        };
+
+        const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+        // --- localStorage 辅助函数 ---
+        const loadFromStorage = (key, defaultValue) => {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : defaultValue;
+            } catch (e) {
+                console.error(`Error loading localStorage key "${key}":`, e);
+                return defaultValue;
+            }
+        };
+
+        const saveToStorage = (key, value) => {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+            } catch (e) {
+                console.error(`Error saving to localStorage key "${key}":`, e);
+            }
+        };
+
+        // --- 核心数据结构 V10 ---
+        const DEFAULT_STATE = {
+            version: 'v10_final_3',
+            time: { year: 2024, month: 5, day: 20, hour: 8, minute: 0 },
+            player: { name: '开拓者', gender: 'male', desc: '一名充满好奇心的旅行者，正在这个小镇四处探索。', x: 1, y: 1, levelId: 'cityA' },
+            settings: { 
+                noTimeMode: false, npcActionInterval: 10, storyInterval: 60, 
+                generation: { maxTokens: 300, temperature: 0.8, topP: 0.9, frequencyPenalty: 0 },
+                enableCodeRender: true, enableCodeExecution: false,
+                customCSS: '', regexRules: []
+            },
+            globalApi: { baseUrl: '', apiKey: '', model: '', customModel: false }, 
+            maps: {
+                'world': { id: 'world', name: '🌍 大地图', w: 8, h: 8, parent: null, timeCost: 60, desc: '广阔的世界版图。', nodes: [{ id: 'n1', name: 'A市入口', x: 2, y: 2, targetLevel: 'cityA', targetX: 5, targetY: 5, desc: '通往A市的公路。' }], blockedTiles: [] },
+                'cityA': { id: 'cityA', name: '🏙️ A市', w: 10, h: 10, parent: 'world', timeCost: 5, desc: '繁华的现代都市。', nodes: [{ id: 'n2', name: '你的家', x: 1, y: 1, targetLevel: '', targetX: 0, targetY: 0, desc: '温馨的住所。' }, { id: 'n3', name: '大商场', x: 7, y: 3, targetLevel: '', targetX: 0, targetY: 0, desc: '购物中心。' }, { id: 'n4', name: '返回大地图', x: 5, y: 5, targetLevel: 'world', targetX: 2, targetY: 3, desc: '返回大地图的出口。' }], blockedTiles: [] }
+            },
+            worldbooks: [
+                { id: 'wb_1', title: '世界观基石', enabled: true, content: '这是一个魔法与科技并存的世界，普通人与异能者共处。' }
+            ],
+            promptFlowChat: [
+                { id: 'c1', type: 'system', name: '⚠️ 核心指令 (Main Prompt)', content: 'Write {{char}}\'s next reply in a fictional chat between {{char}} and {{user}}. Write 1 reply only. Use markdown. Be proactive and drive the conversation forward.', enabled: true, order: 0 },
+                { id: 'c2', type: 'worldbook', name: '📖 世界书容器', content: '自动注入启用的世界书', enabled: true, order: 1 },
+                { id: 'c3', type: 'character', name: '👤 角色设定容器', content: '自动注入 Description, Personality 等', enabled: true, order: 2 },
+                { id: 'c4', type: 'map', name: '🗺️ 环境与记忆锚点', content: '自动注入坐标、环境、时间与私有记忆', enabled: true, order: 3 },
+                { id: 'c5', type: 'history', name: '💬 聊天历史与动作记录', content: '拼接对话流', enabled: true, order: 4 }
+            ],
+            promptFlowAction: [
+                { id: 'a1', type: 'system', name: '⚠️ 行动逻辑 (Action Prompt)', content: '你是RPG世界中的自主NPC。根据你的角色设定、记忆和周围环境，用1-2句话简洁地描述你的**物理行动和内心想法**。\n\n⚠️ 重要提示：\n- **不要臆想或虚构与其他角色（特别是玩家）的对话**，除非那个角色真的在你旁边\n- 只描述你自己正在做的事情，比如散步、观察环境、思考等\n- 如果需要移动，可以在最后添加坐标标签', enabled: true, order: 0 },
+                { id: 'a2', type: 'worldbook', name: '📖 世界书容器', content: '自动注入启用的世界书', enabled: true, order: 1 },
+                { id: 'a3', type: 'character', name: '👤 角色设定容器', content: '自动注入设定', enabled: true, order: 2 },
+                { id: 'a4', type: 'map', name: '🗺️ 环境与记忆锚点', content: '自动注入当前坐标环境与记忆', enabled: true, order: 3 },
+                { id: 'a5', type: 'system', name: '🕹️ 坐标引擎系统 (Coord Engine)', content: '关键规则：如果你决定移动到新位置，必须在回复末尾添加 `<coord>X,Y</coord>`，其中 X 和 Y 是你的新网格坐标（不要超过地图宽高）。即使不移动，也输出你当前的 `<coord>X,Y</coord>`。', enabled: true, order: 4 },
+                { id: 'a6', type: 'history', name: '💬 最近历史记录', content: '拼接前几次的行动或聊天记忆', enabled: true, order: 5 }
+            ],
+            promptFlowStory: [
+                { id: 's1', type: 'system', name: '⚠️ 上帝指令 (Story Prompt)', content: '你是一个小说的旁观叙述者（上帝视角）。请根据以下时间段内发生的角色行为日志，写一段引人入胜的开放世界小说情节（约200-300字）。直接讲述故事，像实体出版物一样。', enabled: true, order: 0 },
+                { id: 's2', type: 'worldbook', name: '📖 世界书容器', content: '自动注入启用的世界书', enabled: true, order: 1 },
+                { id: 's3', type: 'logs', name: '📜 行为汇总容器', content: '自动注入这段时间内收集的所有日志', enabled: true, order: 2 }
+            ],
+            npcs: [
+                { id: 'npc1', name: '小雅', gender: 'female', 
+                  desc: '小雅是一个温柔体贴的邻家女孩，留着黑色长发，喜欢穿白色的裙子。', 
+                  personality: '善解人意，害羞，对新鲜事物充满好奇。',
+                  scenario: '小雅正在小镇里散步。', memory: '小雅记得玩家昨天借给她一把伞。',
+                  mesExamples: '<START>\n{{user}}: 小雅，早上好呀。\n{{char}}: *脸颊微红，轻轻挥手* 早、早上好，{{user}}。今天的天气真好呢。',
+                  firstMsgEnabled: true, firstMsg: '啊，是你呀！今天天气真好，你也是出来散步的吗？', 
+                  x: 2, y: 2, levelId: 'cityA', color: 'text-pink-400', bg: 'bg-pink-500/20',
+                  apiMain: { baseUrl: 'https://api.openai.com/v1', apiKey: '', model: '', customModel: false }
+                }
+            ],
+            currentLevelId: 'cityA'
+        };
+
+        const ExecutableBlock = ({ htmlCode }) => {
+            const containerRef = useRef(null);
+            useEffect(() => {
+                if (containerRef.current && htmlCode) {
+                    const slot = document.createElement('div');
+                    slot.innerHTML = htmlCode;
+                    const scripts = slot.querySelectorAll('script');
+                    scripts.forEach(oldScript => {
+                        const newScript = document.createElement('script');
+                        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                    });
+                    containerRef.current.innerHTML = '';
+                    containerRef.current.appendChild(slot);
+                }
+            }, [htmlCode]);
+            return <div ref={containerRef} className="executed-code-container text-xs text-emerald-200" />;
+        };
+
+        function App() {
+            // --- 状态加载 ---
+            const [data, setData] = useState(() => loadFromStorage('rpg_core_v10_3', DEFAULT_STATE));
+            const [logs, setLogs] = useState(() => loadFromStorage('rpg_logs_v10_3', {}));
+            const [stories, setStories] = useState(() => loadFromStorage('rpg_stories_v10_3', {}));
+
+            const [modelLists, setModelLists] = useState({});
+            const [apiStatus, setApiStatus] = useState({});
+            const [view, setView] = useState('game'); 
+            const [activeNpcId, setActiveNpcId] = useState(null);
+            const [settingsTab, setSettingsTab] = useState('globalApi'); 
+            const [promptFlowTab, setPromptFlowTab] = useState('chat'); 
+            const [inputText, setInputText] = useState('');
+            const [isTyping, setIsTyping] = useState(false);
+            const [editMapId, setEditMapId] = useState(data.currentLevelId);
+            const [selectedDate, setSelectedDate] = useState(''); 
+            const [npcPreviewTabs, setNpcPreviewTabs] = useState({});
+            const [draggingNode, setDraggingNode] = useState(null);
+            const [isLongPress, setIsLongPress] = useState(false);
+            const longPressTimerRef = useRef(null);
+            const [draggingPrompt, setDraggingPrompt] = useState(null);
+            const [dragOverIndex, setDragOverIndex] = useState(null);
+            const [editingMessageId, setEditingMessageId] = useState(null);
+            const [editingMessageContent, setEditingMessageContent] = useState('');
+            const [regeneratingMessageId, setRegeneratingMessageId] = useState(null);
+            
+            const logScrollRef = useRef(null);
+            const lastNpcTickRef = useRef(data.time);
+            const lastStoryTickRef = useRef(data.time);
+
+            const currentMap = data.maps[data.currentLevelId] || Object.values(data.maps)[0];
+
+            useEffect(() => { saveToStorage('rpg_core_v10_3', data); }, [data]);
+            useEffect(() => { saveToStorage('rpg_logs_v10_3', logs); }, [logs]);
+            useEffect(() => { saveToStorage('rpg_stories_v10_3', stories); }, [stories]);
+
+            useEffect(() => {
+                let styleEl = document.getElementById('custom-user-css');
+                if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'custom-user-css'; document.head.appendChild(styleEl); }
+                styleEl.innerHTML = data.settings.customCSS || '';
+            }, [data.settings.customCSS]);
+
+            // --- 工具函数 ---
+            const pad = (n) => n.toString().padStart(2, '0');
+            const formatTime = (t) => `${t.year}-${pad(t.month)}-${pad(t.day)} ${pad(t.hour)}:${pad(t.minute)}`;
+            const getDateStr = (t) => `${t.year}-${pad(t.month)}-${pad(t.day)}`;
+            
+            const advanceTime = (current, addMins) => {
+                let d = new Date(current.year, current.month - 1, current.day, current.hour, current.minute);
+                d.setMinutes(d.getMinutes() + addMins);
+                return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), hour: d.getHours(), minute: d.getMinutes() };
+            };
+            
+            const getTimeDiff = (t1, t2) => {
+                const d1 = new Date(t1.year, t1.month-1, t1.day, t1.hour, t1.minute).getTime();
+                const d2 = new Date(t2.year, t2.month-1, t2.day, t2.hour, t2.minute).getTime();
+                return (d1 - d2) / 60000; 
+            };
+
+            const getBaseEndpoint = (url) => url.trim().replace(/\/+$/, '').replace(/\/chat\/completions$/, '');
+
+            // --- 日志操作辅助函数 ---
+            const addLogMessage = (npcId, message) => {
+                setLogs(prev => ({ ...prev, [npcId]: [...(prev[npcId] || []), message] }));
+            };
+
+            const updateLogMessage = (npcId, msgId, updateFn) => {
+                setLogs(prev => {
+                    const c = prev[npcId] || [];
+                    return {...prev, [npcId]: c.map(m => m.id === msgId ? updateFn(m) : m)};
+                });
+            };
+
+            const deleteLogMessage = (npcId, msgId) => {
+                setLogs(prev => {
+                    const c = prev[npcId] || [];
+                    return {...prev, [npcId]: c.filter(m => m.id !== msgId)};
+                });
+            };
+
+            // --- AI消息处理辅助函数 ---
+            const processAiMessage = (rawContent, removeCoord = true) => {
+                let content = rawContent;
+                if (removeCoord) {
+                    content = content.replace(/<coord>[\s\S]*?<\/coord>/ig, '').trim();
+                }
+                return { rawContent, content: applyRegex(content) };
+            };
+
+            const createChatMessage = (role, rawContent, removeCoord = true) => {
+                const processed = processAiMessage(rawContent, removeCoord);
+                return { id: generateId(), type: 'chat', role, ...processed, time: formatTime(data.time) };
+            };
+
+            const createActionMessage = (rawContent) => {
+                const processed = processAiMessage(rawContent, true);
+                return { id: generateId(), type: 'action', role: 'assistant', ...processed, time: formatTime(data.time) };
+            };
+            
+            const applyRegex = (text) => {
+                let res = text;
+                data.settings.regexRules.forEach(rule => {
+                    if (!rule.pattern) return;
+                    try { res = res.replace(new RegExp(rule.pattern, rule.flags), rule.replace || ''); } catch (e) {}
+                });
+                return res;
+            };
+
+            // --- API 模型获取 ---
+            const fetchModels = async (apiScope, apiConfig) => {
+                if (!apiConfig.baseUrl || !apiConfig.apiKey) { setApiStatus(p => ({...p, [apiScope]: { loading: false, msg: '缺少 URL 或 Key' }})); return; }
+                setApiStatus(p => ({...p, [apiScope]: { loading: true, msg: '正在请求...' }}));
+                try {
+                    const base = getBaseEndpoint(apiConfig.baseUrl);
+                    const res = await fetch(`${base}/models`, { headers: { 'Authorization': `Bearer ${apiConfig.apiKey}` } });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const resData = await res.json();
+                    if (resData && resData.data && Array.isArray(resData.data)) {
+                        const models = resData.data.map(m => m.id);
+                        setModelLists(p => ({...p, [apiScope]: models}));
+                        setApiStatus(p => ({...p, [apiScope]: { loading: false, msg: `获取 ${models.length} 模型成功` }}));
+                    } else throw new Error("返回格式不规范");
+                } catch (err) { setApiStatus(p => ({...p, [apiScope]: { loading: false, msg: `失败: ${err.message}` }})); }
+            };
+
+            // --- Prompt 引擎 ---
+            const buildSystemPrompt = (flowType, npc, extraLogs = []) => {
+                let envFull = "";
+                let charFull = "";
+                const tavernVars = {};
+                
+                if (npc) {
+                    const cMap = data.maps[npc.levelId];
+                    envFull = `[当前位置]: ${cMap.name} (尺寸: ${cMap.w}x${cMap.h})\n[环境描述]: ${cMap.desc}\n[周围可见地标]: ${cMap.nodes.map(n=>`${n.name}(坐标:${n.x},${n.y})`).join(', ') || '暂无'}\n[系统时间]: ${formatTime(data.time)}\n[角色私有记忆]: ${npc.memory || '无特殊记忆'}\n[当前坐标]: X:${npc.x}, Y:${npc.y}`;
+                    charFull = `[角色设定: ${npc.name}]\n` + 
+                               (npc.desc ? `描述: ${npc.desc}\n` : '') + 
+                               (npc.personality ? `性格: ${npc.personality}\n` : '') + 
+                               (npc.scenario ? `当前场景: ${npc.scenario}\n` : '') + 
+                               (npc.mesExamples ? `\n[对话风格示例]\n${npc.mesExamples}\n` : '');
+                }
+
+                const processTavernMacros = (text) => {
+                    if(!text) return "";
+                    let result = text;
+                    
+                    result = result.replace(/{{char}}/g, npc ? npc.name : 'AI');
+                    result = result.replace(/{{user}}/g, data.player.name);
+                    
+                    result = result.replace(/{{setvar::([^:]+)::([^}]+)}}/g, (match, varName, varValue) => {
+                        tavernVars[varName] = varValue;
+                        return '';
+                    });
+                    
+                    result = result.replace(/{{getvar::([^}]+)}}/g, (match, varName) => {
+                        return tavernVars[varName] || '';
+                    });
+                    
+                    result = result.replace(/{{random::([^}]+)}}/g, (match, options) => {
+                        const opts = options.split(',');
+                        return opts[Math.floor(Math.random() * opts.length)] || '';
+                    });
+                    
+                    result = result.replace(/{{roll (\d+)d(\d+)}}/g, (match, num, sides) => {
+                        const n = parseInt(num);
+                        const s = parseInt(sides);
+                        let total = 0;
+                        for (let i = 0; i < n; i++) {
+                            total += Math.floor(Math.random() * s) + 1;
+                        }
+                        return total.toString();
+                    });
+                    
+                    result = result.replace(/{{\/\/[^}]+}}/g, '');
+                    result = result.replace(/{{[^}]+\/\/[^}]+}}/g, (match) => {
+                        if (match.includes('setvar::') || match.includes('getvar::') || match.includes('random::') || match.includes('roll ')) {
+                            return match;
+                        }
+                        return '';
+                    });
+                    
+                    return result;
+                };
+
+                let finalPrompt = "";
+                const flowArray = flowType === 'chat' ? data.promptFlowChat : flowType === 'action' ? data.promptFlowAction : data.promptFlowStory;
+                const flow = [...flowArray].sort((a,b)=>a.order - b.order);
+
+                const enabledSystemBlocks = flow.filter(b => b.enabled && b.type === 'system');
+                enabledSystemBlocks.forEach(block => {
+                    processTavernMacros(block.content);
+                });
+
+                flow.forEach(block => {
+                    if(!block.enabled) return;
+                    if(block.type === 'system') {
+                        let content = block.content;
+                        content = content.replace(/{{setvar::[^}]+}}/g, '');
+                        content = content.replace(/{{\/\/[^}]+}}/g, '');
+                        finalPrompt += `\n${processTavernMacros(content)}\n`;
+                    }
+                    else if(block.type === 'worldbook') {
+                        const wbContent = data.worldbooks.filter(w=>w.enabled).map(w=>processTavernMacros(w.content)).join('\n');
+                        if(wbContent) finalPrompt += `\n[世界设定]\n${wbContent}\n`;
+                    }
+                    else if(block.type === 'character' && npc) finalPrompt += `\n${processTavernMacros(charFull)}\n`;
+                    else if(block.type === 'map' && npc) finalPrompt += `\n[环境变量与记忆]\n${processTavernMacros(envFull)}\n`;
+                    else if(block.type === 'logs') finalPrompt += `\n【行动记录】：\n${extraLogs.join('\n')}\n`;
+                });
+
+                return applyRegex(finalPrompt);
+            };
+
+            const callAPI = async (apiConfig, systemPrompt, messageHistory) => {
+                if (!apiConfig || !apiConfig.apiKey) throw new Error("API 未配置");
+                const base = getBaseEndpoint(apiConfig.baseUrl);
+                const messagesToSend = [{ role: 'system', content: systemPrompt }, ...messageHistory];
+                const params = data.settings.generation;
+                
+                const response = await fetch(`${base}/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiConfig.apiKey}` },
+                    body: JSON.stringify({ 
+                        model: apiConfig.model, 
+                        messages: messagesToSend, 
+                        max_tokens: params.maxTokens,
+                        temperature: params.temperature,
+                        top_p: params.topP,
+                        frequency_penalty: params.frequencyPenalty
+                    })
+                });
+                if (!response.ok) throw new Error(`HTTP ${(await response.json()).error?.message || response.status}`);
+                return (await response.json()).choices[0].message.content;
+            };
+
+            // --- 游戏行为引擎 ---
+            const handleMovePlayer = (dx, dy) => {
+                if (view !== 'game') return;
+                setData(prev => {
+                    const map = prev.maps[prev.currentLevelId];
+                    const nx = prev.player.x + dx;
+                    const ny = prev.player.y + dy;
+                    
+                    if (nx < 0 || ny < 0 || nx >= map.w || ny >= map.h) return prev;
+                    
+                    const isBlocked = (map.blockedTiles || []).some(t => t.x === nx && t.y === ny);
+                    if (isBlocked) return prev;
+
+                    let nextLevelId = prev.currentLevelId;
+                    let px = nx, py = ny;
+                    
+                    const nodeOnTile = map.nodes.find(n => n.x === nx && n.y === ny);
+                    if (nodeOnTile && nodeOnTile.targetLevel && prev.maps[nodeOnTile.targetLevel]) {
+                        const targetMap = prev.maps[nodeOnTile.targetLevel];
+                        nextLevelId = nodeOnTile.targetLevel;
+                        
+                        let targetX = nodeOnTile.targetX;
+                        let targetY = nodeOnTile.targetY;
+                        
+                        if (targetX === undefined || targetY === undefined || targetX === 0 && targetY === 0) {
+                            const backNode = targetMap.nodes.find(n => n.targetLevel === prev.currentLevelId);
+                            if (backNode) {
+                                const candidates = [
+                                    {x: backNode.x - 1, y: backNode.y},
+                                    {x: backNode.x + 1, y: backNode.y},
+                                    {x: backNode.x, y: backNode.y - 1},
+                                    {x: backNode.x, y: backNode.y + 1}
+                                ];
+                                for (const cand of candidates) {
+                                    if (cand.x >= 0 && cand.x < targetMap.w && cand.y >= 0 && cand.y < targetMap.h) {
+                                        const blocked = (targetMap.blockedTiles || []).some(t => t.x === cand.x && t.y === cand.y);
+                                        if (!blocked) {
+                                            targetX = cand.x;
+                                            targetY = cand.y;
+                                            break;
+                                        }
+                                    }
+                                }
+                            } else {
+                                for (let x = 0; x < targetMap.w; x++) {
+                                    for (let y = 0; y < targetMap.h; y++) {
+                                        const blocked = (targetMap.blockedTiles || []).some(t => t.x === x && t.y === y);
+                                        if (!blocked) {
+                                            targetX = x;
+                                            targetY = y;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        px = targetX;
+                        py = targetY;
+                    }
+
+                    const timePassed = prev.settings.noTimeMode ? 0 : map.timeCost;
+                    return { ...prev, player: { ...prev.player, x: px, y: py, levelId: nextLevelId }, currentLevelId: nextLevelId, time: advanceTime(prev.time, timePassed) };
+                });
+            };
+
+            const doNpcBackgroundActions = async () => {
+                const promises = data.npcs.map(async (npc) => {
+                    if (!npc.apiMain || !npc.apiMain.apiKey) return;
+                    if (npc.id === activeNpcId && view === 'chat') return; 
+
+                    try {
+                        const sysPrompt = buildSystemPrompt('action', npc, []);
+                        
+                        let history = [];
+                        if (data.promptFlowAction.find(f => f.type === 'history')?.enabled) {
+                            history = (logs[npc.id] || []).slice(-10).map(l => ({
+                                role: l.role === 'user' ? 'user' : 'assistant',
+                                content: l.type === 'action' ? `(过去行为) ${l.content}` : l.content
+                            }));
+                        }
+
+                        const isPlayerNearby = (data.player.levelId === npc.levelId && 
+                            Math.abs(data.player.x - npc.x) <= 1 && 
+                            Math.abs(data.player.y - npc.y) <= 1);
+
+                        const additionalReminder = !isPlayerNearby ? 
+                            '【特别提醒】：玩家不在你身边！不要臆想或虚构与玩家的对话。只描述你自己的行动和想法。' : '';
+
+                        const aiReplyRaw = await callAPI(npc.apiMain, sysPrompt + '\n' + additionalReminder, history);
+                        
+                        let newX = npc.x, newY = npc.y;
+                        const coordMatch = aiReplyRaw.match(/<coord>\s*(\d+)\s*,\s*(\d+)\s*<\/coord>/i);
+                        
+                        if (coordMatch) {
+                            newX = parseInt(coordMatch[1], 10);
+                            newY = parseInt(coordMatch[2], 10);
+                        } else {
+                            const map = data.maps[npc.levelId];
+                            const directions = [
+                                {dx: 0, dy: -1}, {dx: 0, dy: 1},
+                                {dx: -1, dy: 0}, {dx: 1, dy: 0},
+                                {dx: 0, dy: 0}
+                            ];
+                            const randomDir = directions[Math.floor(Math.random() * directions.length)];
+                            newX = npc.x + randomDir.dx;
+                            newY = npc.y + randomDir.dy;
+                        }
+                        
+                        const actionMsg = createActionMessage(aiReplyRaw);
+                        if (actionMsg.content) {
+                            addLogMessage(npc.id, actionMsg);
+                        }
+
+                        setData(p => {
+                            const map = p.maps[npc.levelId];
+                            
+                            const isTileBlocked = (x, y) => {
+                                return (map.blockedTiles || []).some(t => t.x === x && t.y === y);
+                            };
+                            
+                            const isPositionOccupied = (x, y, excludeId) => {
+                                return p.npcs.some(n => 
+                                    n.id !== excludeId && 
+                                    n.x === x && 
+                                    n.y === y && 
+                                    n.levelId === npc.levelId
+                                );
+                            };
+                            
+                            const isPositionValid = (x, y, excludeId) => {
+                                return x >= 0 && x < map.w && 
+                                       y >= 0 && y < map.h && 
+                                       !isTileBlocked(x, y) && 
+                                       !isPositionOccupied(x, y, excludeId);
+                            };
+                            
+                            let validX = npc.x;
+                            let validY = npc.y;
+                            
+                            const targetX = Math.max(0, Math.min(map.w - 1, newX));
+                            const targetY = Math.max(0, Math.min(map.h - 1, newY));
+                            
+                            if (isPositionValid(targetX, targetY, npc.id)) {
+                                validX = targetX;
+                                validY = targetY;
+                            } else {
+                                const fallbackPositions = [
+                                    {x: npc.x, y: npc.y},
+                                    {x: npc.x, y: Math.max(0, npc.y - 1)},
+                                    {x: npc.x, y: Math.min(map.h - 1, npc.y + 1)},
+                                    {x: Math.max(0, npc.x - 1), y: npc.y},
+                                    {x: Math.min(map.w - 1, npc.x + 1), y: npc.y}
+                                ];
+                                
+                                for (const pos of fallbackPositions) {
+                                    if (isPositionValid(pos.x, pos.y, npc.id)) {
+                                        validX = pos.x;
+                                        validY = pos.y;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            return {
+                                ...p, 
+                                npcs: p.npcs.map(n => 
+                                    n.id === npc.id 
+                                        ? {...n, x: validX, y: validY} 
+                                        : n
+                                )
+                            };
+                        });
+                    } catch(e) { console.error("NPC Action Error:", e); }
+                });
+                await Promise.all(promises);
+            };
+
+            const doGodAiStory = async () => {
+                if (!data.globalApi || !data.globalApi.apiKey) return;
+                
+                let recentLogs = [];
+                Object.keys(logs).forEach(npcId => {
+                    const npc = data.npcs.find(n=>n.id===npcId);
+                    if(!npc) return;
+                    const npcLogs = logs[npcId].filter(l => getTimeDiff(data.time, { year: parseInt(l.time.substring(0,4)), month: parseInt(l.time.substring(5,7)), day: parseInt(l.time.substring(8,10)), hour: parseInt(l.time.substring(11,13)), minute: parseInt(l.time.substring(14,16)) }) <= data.settings.storyInterval);
+                    npcLogs.forEach(l => {
+                        if(l.type === 'action') recentLogs.push(`[${l.time}] ${npc.name}行动: ${l.content}`);
+                        else if(l.role === 'user') recentLogs.push(`[${l.time}] ${data.player.name}对${npc.name}说: ${l.content}`);
+                        else recentLogs.push(`[${l.time}] ${npc.name}说: ${l.content}`);
+                    });
+                });
+
+                if (recentLogs.length === 0) recentLogs.push("这段时间内小镇非常宁静，大家都在休息。");
+
+                const sysPrompt = buildSystemPrompt('story', null, recentLogs);
+
+                try {
+                    const storyContent = await callAPI(data.globalApi, sysPrompt, []);
+                    const todayStr = getDateStr(data.time);
+                    setStories(prev => {
+                        const curDay = prev[todayStr] || [];
+                        return { ...prev, [todayStr]: [...curDay, { time: `${pad(data.time.hour)}:${pad(data.time.minute)}`, content: applyRegex(storyContent) }] };
+                    });
+                } catch(e) { console.error("Story Gen Error:", e); }
+            };
+
+            useEffect(() => {
+                if (data.settings.noTimeMode) return;
+
+                const checkTriggers = async () => {
+                    const minsSinceNpc = getTimeDiff(data.time, lastNpcTickRef.current);
+                    if (minsSinceNpc >= data.settings.npcActionInterval) {
+                        await doNpcBackgroundActions();
+                        lastNpcTickRef.current = data.time;
+                    }
+
+                    const minsSinceStory = getTimeDiff(data.time, lastStoryTickRef.current);
+                    if (minsSinceStory >= data.settings.storyInterval) {
+                        await doGodAiStory();
+                        lastStoryTickRef.current = data.time;
+                    }
+                };
+                checkTriggers();
+            }, [data.time, data.settings.npcActionInterval, data.settings.storyInterval]);
+
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (view !== 'game') return;
+                    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+                    switch (e.key) {
+                        case 'ArrowUp': case 'w': handleMovePlayer(0, -1); break;
+                        case 'ArrowDown': case 's': handleMovePlayer(0, 1); break;
+                        case 'ArrowLeft': case 'a': handleMovePlayer(-1, 0); break;
+                        case 'ArrowRight': case 'd': handleMovePlayer(1, 0); break;
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown, { passive: false });
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [view]);
+
+            // --- 对话处理 ---
+            const handleInteract = (npc) => {
+                setActiveNpcId(npc.id);
+                setView('chat');
+                setLogs(prev => {
+                    const npcLogs = prev[npc.id] || [];
+                    if (npcLogs.length === 0 && npc.firstMsgEnabled && npc.firstMsg) {
+                        return { ...prev, [npc.id]: [...npcLogs, { id: generateId(), type:'chat', role: 'assistant', content: npc.firstMsg, time: formatTime(data.time) }] };
+                    }
+                    return prev; 
+                });
+            };
+
+            const sendDirectMessage = async () => {
+                if (!inputText.trim() || !activeNpcId || isTyping) return;
+                const npc = data.npcs.find(n => n.id === activeNpcId);
+                const userMsg = { id: generateId(), type: 'chat', role: 'user', rawContent: inputText.trim(), content: inputText.trim(), time: formatTime(data.time) };
+                
+                addLogMessage(activeNpcId, userMsg);
+                setInputText('');
+                setIsTyping(true);
+
+                try {
+                    const sysPrompt = buildSystemPrompt('chat', npc, []);
+                    let history = [];
+                    if (data.promptFlowChat.find(f => f.type === 'history')?.enabled) {
+                        history = (logs[activeNpcId] || []).map(l => ({
+                            role: l.role,
+                            content: l.type === 'action' ? `(对方行动记忆) ${l.content}` : l.content
+                        })).slice(-15); 
+                    }
+
+                    const aiReplyRaw = await callAPI(npc.apiMain, sysPrompt, history);
+                    const aiMsg = createChatMessage('assistant', aiReplyRaw);
+                    addLogMessage(activeNpcId, aiMsg);
+                } catch (e) {
+                    const errorMsg = `[通信错误]: ${e.message}`;
+                    addLogMessage(activeNpcId, createChatMessage('assistant', errorMsg));
+                } finally {
+                    setIsTyping(false);
+                }
+            };
+
+            const deleteMessage = (msgId) => {
+                if (!confirm('确定删除这条消息吗？')) return;
+                deleteLogMessage(activeNpcId, msgId);
+            };
+
+            const startEditMessage = (msg) => {
+                setEditingMessageId(msg.id);
+                setEditingMessageContent(msg.rawContent || msg.content);
+            };
+
+            const saveEditMessage = (msgId) => {
+                const processed = processAiMessage(editingMessageContent);
+                updateLogMessage(activeNpcId, msgId, (m) => ({ ...m, ...processed }));
+                setEditingMessageId(null);
+                setEditingMessageContent('');
+            };
+
+            const regenerateMessage = async (msgId) => {
+                if (!activeNpcId) return;
+                const npc = data.npcs.find(n => n.id === activeNpcId);
+                setRegeneratingMessageId(msgId);
+                
+                try {
+                    const history = logs[activeNpcId] || [];
+                    const msgIndex = history.findIndex(m => m.id === msgId);
+                    if (msgIndex === -1) return;
+                    
+                    const historyBefore = history.slice(0, msgIndex);
+                    
+                    const sysPrompt = buildSystemPrompt('chat', npc, []);
+                    let apiHistory = [];
+                    if (data.promptFlowChat.find(f => f.type === 'history')?.enabled) {
+                        apiHistory = historyBefore.map(l => ({
+                            role: l.role,
+                            content: l.type === 'action' ? `(对方行动记忆) ${l.content}` : l.content
+                        })).slice(-15);
+                    }
+
+                    const aiReplyRaw = await callAPI(npc.apiMain, sysPrompt, apiHistory);
+                    const processed = processAiMessage(aiReplyRaw);
+                    updateLogMessage(activeNpcId, msgId, (m) => ({ ...m, ...processed, time: formatTime(data.time) }));
+                } catch (e) {
+                    alert('重新生成失败：' + e.message);
+                } finally {
+                    setRegeneratingMessageId(null);
+                }
+            };
+
+            useEffect(() => {
+                if (logScrollRef.current) logScrollRef.current.scrollTop = logScrollRef.current.scrollHeight;
+            }, [logs, view, isTyping]);
+
+
+            // --- 数据管理 ---
+            const exportData = () => {
+                const combined = { config: data, logs: logs, stories: stories };
+                navigator.clipboard.writeText(JSON.stringify(combined)).then(() => alert("预设与存档已复制到剪贴板！"));
+            };
+            const extractTavernDataFromJPG = async (arrayBuffer) => {
+                const data = new Uint8Array(arrayBuffer);
+                const textDecoder = new TextDecoder('utf-8', { fatal: false });
+                
+                const readUInt16BE = (offset) => {
+                    if (offset + 1 >= data.length) return 0;
+                    return (data[offset] << 8) | data[offset + 1];
+                };
+                
+                if (data[0] !== 0xFF || data[1] !== 0xD8) {
+                    throw new Error('不是有效的 JPG 文件');
+                }
+                
+                let offset = 2;
+                while (offset < data.length - 4) {
+                    if (data[offset] !== 0xFF) {
+                        offset++;
+                        continue;
+                    }
+                    
+                    const marker = data[offset + 1];
+                    const segmentLength = readUInt16BE(offset + 2);
+                    
+                    if (segmentLength < 2) {
+                        offset += 2;
+                        continue;
+                    }
+                    
+                    if (marker >= 0xE0 && marker <= 0xEF) {
+                        try {
+                            const segmentData = data.slice(offset + 4, offset + 4 + Math.min(segmentLength - 2, data.length - offset - 4));
+                            const content = textDecoder.decode(segmentData);
+                            
+                            const jsonResult = tryExtractJSON(content);
+                            if (jsonResult) return jsonResult;
+                        } catch (e) {
+                            console.error('解析 JPG APP 段失败:', e);
+                        }
+                    }
+                    
+                    offset += 2 + segmentLength;
+                    if (marker === 0xDA) break;
+                }
+                
+                try {
+                    const content = textDecoder.decode(data);
+                    const jsonResult = tryExtractJSON(content);
+                    if (jsonResult) return jsonResult;
+                } catch (e) {
+                }
+                
+                throw new Error('JPG 中未找到酒馆角色卡片数据');
+            };
+
+            const fixDoubleEncodedText = (text) => {
+                try {
+                    const encoder = new TextEncoder('utf-8');
+                    const bytes = encoder.encode(text);
+                    const decoder = new TextDecoder('gbk');
+                    const fixed = decoder.decode(bytes);
+                    return fixed;
+                } catch (e) {
+                    try {
+                        const bytes = new Uint8Array(text.length);
+                        for (let i = 0; i < text.length; i++) {
+                            bytes[i] = text.charCodeAt(i) & 0xFF;
+                        }
+                        const decoder = new TextDecoder('gbk');
+                        return decoder.decode(bytes);
+                    } catch (e2) {
+                        return text;
+                    }
+                }
+            };
+
+            const fixObjectEncoding = (obj) => {
+                if (obj == null) return obj;
+                if (typeof obj === 'string') {
+                    if (/[\u0080-\uFFFF]{2,}/.test(obj)) {
+                        const fixed = fixDoubleEncodedText(obj);
+                        if (/[\u4e00-\u9fa5]/.test(fixed)) {
+                            return fixed;
+                        }
+                    }
+                    return obj;
+                }
+                if (Array.isArray(obj)) {
+                    return obj.map(item => fixObjectEncoding(item));
+                }
+                if (typeof obj === 'object') {
+                    const newObj = {};
+                    for (const key in obj) {
+                        newObj[key] = fixObjectEncoding(obj[key]);
+                    }
+                    return newObj;
+                }
+                return obj;
+            };
+
+            const base64ToUtf8 = (str) => {
+                try {
+                    const binaryString = atob(str);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    
+                    let result = null;
+                    
+                    try {
+                        const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+                        result = utf8Decoder.decode(bytes);
+                        if (result && /[\u4e00-\u9fa5]/.test(result)) {
+                            return result;
+                        }
+                    } catch (e) {
+                    }
+                    
+                    try {
+                        const utf8Decoder = new TextDecoder('utf-8');
+                        result = utf8Decoder.decode(bytes);
+                        if (result && /[\u4e00-\u9fa5]/.test(result)) {
+                            return result;
+                        }
+                        if (result) {
+                            const fixed = fixGarbledText(result);
+                            if (fixed && /[\u4e00-\u9fa5]/.test(fixed)) {
+                                return fixed;
+                            }
+                        }
+                    } catch (e) {
+                    }
+                    
+                    try {
+                        const gbkDecoder = new TextDecoder('gbk');
+                        result = gbkDecoder.decode(bytes);
+                        if (result && /[\u4e00-\u9fa5]/.test(result)) {
+                            return result;
+                        }
+                    } catch (e) {
+                    }
+                    
+                    return new TextDecoder('utf-8').decode(bytes);
+                } catch (e) {
+                    return atob(str);
+                }
+            };
+            
+            const fixGarbledText = (text) => {
+                try {
+                    const encoder = new TextEncoder();
+                    const bytes = encoder.encode(text);
+                    const decoder = new TextDecoder('gbk');
+                    const fixed = decoder.decode(bytes);
+                    if (fixed && /[\u4e00-\u9fa5]/.test(fixed)) {
+                        return fixed;
+                    }
+                } catch (e) {
+                }
+                return text;
+            };
+
+            const tryExtractJSON = (content) => {
+                if (!content) return null;
+                
+                try {
+                    const trimmed = content.trim();
+                    if (trimmed.startsWith('eyJ') || /^[A-Za-z0-9+/=]{20,}$/.test(trimmed)) {
+                        try {
+                            const decoded = base64ToUtf8(trimmed);
+                            const parsed = JSON.parse(decoded);
+                            if (parsed && (parsed.name || parsed.data?.name || parsed.spec || parsed.chara)) {
+                                return parsed;
+                            }
+                        } catch (e) {
+                        }
+                    }
+                } catch (e) {
+                }
+                
+                const jsonStart = content.indexOf('{');
+                if (jsonStart === -1) return null;
+                
+                let braceCount = 0;
+                let jsonEnd = -1;
+                for (let i = jsonStart; i < content.length; i++) {
+                    if (content[i] === '{') braceCount++;
+                    if (content[i] === '}') {
+                        braceCount--;
+                        if (braceCount === 0) {
+                            jsonEnd = i + 1;
+                            break;
+                        }
+                    }
+                }
+                
+                if (jsonEnd === -1) return null;
+                
+                const jsonStr = content.slice(jsonStart, jsonEnd);
+                try {
+                    const parsed = JSON.parse(jsonStr);
+                    if (parsed && (parsed.name || parsed.data?.name || parsed.spec || parsed.chara)) {
+                        return parsed;
+                    }
+                } catch (e) {
+                }
+                return null;
+            };
+
+            const extractTavernDataFromPNG = async (arrayBuffer) => {
+                const data = new Uint8Array(arrayBuffer);
+                const textDecoder = new TextDecoder('utf-8', { fatal: false });
+                
+                const readUInt32BE = (offset) => {
+                    if (offset + 3 >= data.length) return 0;
+                    return (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3];
+                };
+                
+                const pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+                for (let i = 0; i < 8; i++) {
+                    if (data[i] !== pngSignature[i]) {
+                        throw new Error('不是有效的 PNG 文件');
+                    }
+                }
+                
+                let offset = 8;
+                while (offset < data.length - 12) {
+                    const chunkLength = readUInt32BE(offset);
+                    if (chunkLength < 0 || chunkLength > 100 * 1024 * 1024) break;
+                    
+                    const chunkType = textDecoder.decode(data.slice(offset + 4, offset + 8));
+                    
+                    if (chunkType === 'tEXt' || chunkType === 'zTXt') {
+                        try {
+                            const chunkData = data.slice(offset + 8, offset + 8 + Math.min(chunkLength, data.length - offset - 8));
+                            let nullIndex = 0;
+                            while (nullIndex < chunkData.length && chunkData[nullIndex] !== 0) nullIndex++;
+                            
+                            const keyword = textDecoder.decode(chunkData.slice(0, nullIndex)).toLowerCase();
+                            
+                            const targetKeywords = ['chara', 'ccv3', 'character', 'tavern', 'sillytavern', 'card'];
+                            const isTargetChunk = targetKeywords.some(k => keyword.includes(k));
+                            
+                            if (isTargetChunk || keyword === '') {
+                                let contentBytes;
+                                
+                                if (chunkType === 'zTXt' && nullIndex + 1 < chunkData.length) {
+                                    const compressionMethod = chunkData[nullIndex + 1];
+                                    if (compressionMethod === 0 && nullIndex + 2 < chunkData.length) {
+                                        try {
+                                            const compressedData = chunkData.slice(nullIndex + 2);
+                                            const ds = new DecompressionStream('deflate');
+                                            const writer = ds.writable.getWriter();
+                                            writer.write(compressedData);
+                                            writer.close();
+                                            const reader = ds.readable.getReader();
+                                            const chunks = [];
+                                            let result;
+                                            while (!(result = await reader.read()).done) {
+                                                chunks.push(result.value);
+                                            }
+                                            const decompressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+                                            let pos = 0;
+                                            for (const chunk of chunks) {
+                                                decompressed.set(chunk, pos);
+                                                pos += chunk.length;
+                                            }
+                                            contentBytes = decompressed;
+                                        } catch (e) {
+                                            console.error('解压 PNG zTXt 失败:', e);
+                                        }
+                                    }
+                                } else if (nullIndex + 1 < chunkData.length) {
+                                    contentBytes = chunkData.slice(nullIndex + 1);
+                                }
+                                
+                                if (contentBytes) {
+                                    let content = textDecoder.decode(contentBytes);
+                                    content = content.trim();
+                                    
+                                    const jsonResult = tryExtractJSON(content);
+                                    if (jsonResult) return jsonResult;
+                                    
+                                    try {
+                                        if (content.startsWith('eyJ')) {
+                                            const decoded = base64ToUtf8(content);
+                                            return JSON.parse(decoded);
+                                        }
+                                    } catch (e) {
+                                    }
+                                    
+                                    try {
+                                        return JSON.parse(content);
+                                    } catch (e) {
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.error('解析 PNG 块失败:', e);
+                        }
+                    }
+                    
+                    if (chunkType === 'IDAT') {
+                        try {
+                            const content = textDecoder.decode(data);
+                            const jsonResult = tryExtractJSON(content);
+                            if (jsonResult) return jsonResult;
+                        } catch (e) {
+                        }
+                    }
+                    
+                    if (chunkType === 'IEND') break;
+                    offset += 12 + chunkLength;
+                }
+                
+                try {
+                    const content = textDecoder.decode(data);
+                    const jsonResult = tryExtractJSON(content);
+                    if (jsonResult) return jsonResult;
+                } catch (e) {
+                }
+                
+                throw new Error('PNG 中未找到酒馆角色卡片数据');
+            };
+
+            const parseSillyTavernCard = (jsonData) => {
+                try {
+                    const fixAllText = (obj) => {
+                        if (obj == null) return obj;
+                        if (typeof obj === 'string') {
+                            if (!/[\u4e00-\u9fa5]/.test(obj) && /[\u0080-\uFFFF]{2,}/.test(obj)) {
+                                const fixed = fixGarbledText(obj);
+                                if (/[\u4e00-\u9fa5]/.test(fixed)) {
+                                    return fixed;
+                                }
+                            }
+                            return obj;
+                        }
+                        if (Array.isArray(obj)) {
+                            return obj.map(item => fixAllText(item));
+                        }
+                        if (typeof obj === 'object') {
+                            const newObj = {};
+                            for (const key in obj) {
+                                newObj[key] = fixAllText(obj[key]);
+                            }
+                            return newObj;
+                        }
+                        return obj;
+                    };
+                    
+                    const fixedData = fixAllText(jsonData);
+                    let cardData;
+                    if (fixedData.spec === 'chara_card_v2' || fixedData.spec === 'chara_card_v3') {
+                        cardData = fixedData.data;
+                    } else {
+                        cardData = fixedData;
+                    }
+                    const randomColor = () => {
+                        const colors = [
+                            { color: 'text-pink-400', bg: 'bg-pink-500/20' },
+                            { color: 'text-purple-400', bg: 'bg-purple-500/20' },
+                            { color: 'text-blue-400', bg: 'bg-blue-500/20' },
+                            { color: 'text-green-400', bg: 'bg-green-500/20' },
+                            { color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
+                            { color: 'text-orange-400', bg: 'bg-orange-500/20' },
+                        ];
+                        return colors[Math.floor(Math.random() * colors.length)];
+                    };
+                    const colorPair = randomColor();
+                    const currentMap = data.maps[data.currentLevelId] || Object.values(data.maps)[0];
+                    const npc = {
+                        id: 'npc_' + generateId(),
+                        name: cardData.name || '导入角色',
+                        gender: 'female',
+                        desc: cardData.description || '',
+                        personality: cardData.personality || '',
+                        scenario: cardData.scenario || '',
+                        memory: '',
+                        mesExamples: cardData.mes_example || cardData.mesExamples || '',
+                        firstMsgEnabled: true,
+                        firstMsg: cardData.first_mes || cardData.firstMsg || '',
+                        x: Math.floor(currentMap.w / 2),
+                        y: Math.floor(currentMap.h / 2),
+                        levelId: data.currentLevelId,
+                        color: colorPair.color,
+                        bg: colorPair.bg,
+                        promptTemplate: '',
+                        apiMain: { baseUrl: '', apiKey: '', model: '', customModel: false },
+                        tavernData: {
+                            spec: fixedData.spec,
+                            spec_version: fixedData.spec_version,
+                            creator: cardData.creator,
+                            character_version: cardData.character_version,
+                            creator_notes: cardData.creator_notes,
+                            system_prompt: cardData.system_prompt,
+                            post_history_instructions: cardData.post_history_instructions,
+                            tags: cardData.tags,
+                            alternate_greetings: cardData.alternate_greetings,
+                            extensions: cardData.extensions,
+                            character_book: cardData.character_book,
+                            group_only_greetings: cardData.group_only_greetings,
+                            avatar: cardData.avatar
+                        }
+                    };
+                    return npc;
+                } catch (e) {
+                    console.error('解析酒馆卡片解析失败:', e);
+                    throw new Error('无法解析酒馆卡片格式');
+                }
+            };
+
+            const handleImportTavernFile = async (file) => {
+                try {
+                    const fileName = file.name.toLowerCase();
+                    let jsonData;
+                    
+                    if (fileName.endsWith('.png')) {
+                        const arrayBuffer = await file.arrayBuffer();
+                        jsonData = await extractTavernDataFromPNG(arrayBuffer);
+                    } else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) {
+                        const arrayBuffer = await file.arrayBuffer();
+                        jsonData = await extractTavernDataFromJPG(arrayBuffer);
+                    } else {
+                        const content = await file.text();
+                        jsonData = JSON.parse(content);
+                    }
+                    
+                    const npc = parseSillyTavernCard(jsonData);
+                    const cardData = jsonData.data || jsonData;
+                    
+                    const newWorldbooks = [];
+                    
+                    if (cardData.character_book?.entries?.length > 0) {
+                        cardData.character_book.entries.forEach((entry, idx) => {
+                            const title = entry.name || `${npc.name} - 世界书条目 ${idx + 1}`;
+                            const keywords = entry.keys?.join(', ') || '';
+                            let content = '';
+                            
+                            if (entry.content) {
+                                content = entry.content;
+                            }
+                            
+                            if (keywords) {
+                                content = `【触发关键词】${keywords}\n\n${content}`;
+                            }
+                            
+                            if (entry.comment) {
+                                content = `${content}\n\n【备注】${entry.comment}`;
+                            }
+                            
+                            newWorldbooks.push({
+                                id: 'wb_' + generateId(),
+                                title: title,
+                                enabled: entry.enabled !== false,
+                                content: content
+                            });
+                        });
+                    }
+                    
+                    setData(p => ({
+                        ...p,
+                        npcs: [...p.npcs, npc],
+                        worldbooks: [...p.worldbooks, ...newWorldbooks]
+                    }));
+                    
+                    let message = `成功导入角色: ${npc.name}！`;
+                    if (newWorldbooks.length > 0) {
+                        message += `\n同时导入了 ${newWorldbooks.length} 个世界书条目！`;
+                    }
+                    alert(message);
+                } catch (err) {
+                    alert('导入失败：' + err.message);
+                }
+            };
+
+            const handleImportTavernPreset = async (file) => {
+                try {
+                    const content = await file.text();
+                    const presetData = JSON.parse(content);
+                    
+                    if (!presetData.prompts || !Array.isArray(presetData.prompts)) {
+                        alert('这不是一个有效的酒馆提示词流预设文件！');
+                        return;
+                    }
+                    
+                    const newPrompts = presetData.prompts.map((prompt, idx) => ({
+                        id: 'prompt_' + generateId(),
+                        type: 'system',
+                        name: prompt.name || `提示词 ${idx + 1}`,
+                        content: prompt.content || '',
+                        enabled: prompt.enabled !== false,
+                        order: idx
+                    }));
+                    
+                    setData(p => ({
+                        ...p,
+                        promptFlowChat: newPrompts,
+                        promptFlowAction: newPrompts,
+                        promptFlowStory: newPrompts
+                    }));
+                    
+                    let message = `成功导入 ${newPrompts.length} 个提示词条目！`;
+                    
+                    if (presetData.temperature !== undefined) {
+                        message += `\nTemperature: ${presetData.temperature}`;
+                    }
+                    if (presetData.top_p !== undefined) {
+                        message += `\nTop P: ${presetData.top_p}`;
+                    }
+                    if (presetData.top_k !== undefined) {
+                        message += `\nTop K: ${presetData.top_k}`;
+                    }
+                    
+                    alert(message);
+                } catch (err) {
+                    alert('导入失败：' + err.message);
+                }
+            };
+
+            const importData = () => {
+                const input = prompt("请粘贴导出的 JSON 代码：");
+                if (input) {
+                    try {
+                        const parsed = JSON.parse(input);
+                        if(parsed.config) setData(parsed.config);
+                        if(parsed.logs) setLogs(parsed.logs);
+                        if(parsed.stories) setStories(parsed.stories);
+                        alert("导入成功！");
+                    } catch(e) { alert("导入失败：JSON 格式错误。"); }
+                }
+            };
+
+            const heroColors = {
+                skin: '#ffe4d1',
+                skinMid: '#ffd4b8',
+                skinShadow: '#e6bc9e',
+                skinDeep: '#cc9a7d',
+                hair: '#1a0f2e',
+                hairMid: '#2d1b4e',
+                hairLight: '#4c2d7a',
+                hairHighlight: '#7c5cb8',
+                eyes: '#3b82f6',
+                eyesLight: '#60a5fa',
+                eyesHighlight: '#93c5fd',
+                eyesWhite: '#ffffff',
+                shirt: '#6366f1',
+                shirtLight: '#818cf8',
+                shirtMid: '#4f46e5',
+                shirtShadow: '#3730a3',
+                shirtAccent: '#c7d2fe',
+                pants: '#1e293b',
+                pantsLight: '#334155',
+                pantsShadow: '#0f172a',
+                shoes: '#0f172a',
+                shoesLight: '#1e293b',
+                outline: '#0f172a',
+                blush: 'rgba(255, 150, 180, 0.45)'
+            };
+
+            const HeroSprite = ({ direction, frame, size = 48 }) => {
+                const canvasRef = useRef(null);
+                
+                useEffect(() => {
+                    if (!canvasRef.current) return;
+                    const canvas = canvasRef.current;
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, size, size);
+                    
+                    const bobY = Math.sin(frame * Math.PI / 2) * 1.8;
+                    const legOffset = Math.sin(frame * Math.PI / 2) * 3.5;
+                    const armOffset = Math.sin((frame + 2) * Math.PI / 2) * 2.5;
+                    const bodyLean = Math.sin(frame * Math.PI / 2) * 0.8;
+                    const scale = size / 64;
+                    
+                    ctx.save();
+                    ctx.translate(size / 2, size / 2 - 23 * scale + bobY * scale);
+                    ctx.rotate(bodyLean * 0.02);
+                    ctx.scale(scale, scale);
+
+                    if (direction === 'down') {
+                        ctx.fillStyle = heroColors.pants;
+                        ctx.fillRect(-8, 30, 6, 15 + (frame % 2 === 0 ? legOffset : -legOffset));
+                        ctx.fillRect(2, 30, 6, 15 + (frame % 2 === 0 ? -legOffset : legOffset));
+
+                        ctx.fillStyle = heroColors.pantsLight;
+                        ctx.fillRect(-7, 31, 4, 12 + (frame % 2 === 0 ? legOffset * 0.7 : -legOffset * 0.7));
+                        ctx.fillRect(3, 31, 4, 12 + (frame % 2 === 0 ? -legOffset * 0.7 : legOffset * 0.7));
+
+                        ctx.fillStyle = heroColors.shoes;
+                        ctx.fillRect(-10, 44 + (frame % 2 === 0 ? legOffset : -legOffset), 8, 4);
+                        ctx.fillRect(2, 44 + (frame % 2 === 0 ? -legOffset : legOffset), 8, 4);
+
+                        ctx.fillStyle = heroColors.shoesLight;
+                        ctx.fillRect(-9, 45 + (frame % 2 === 0 ? legOffset : -legOffset), 4, 2);
+                        ctx.fillRect(3, 45 + (frame % 2 === 0 ? -legOffset : legOffset), 4, 2);
+
+                        ctx.fillStyle = heroColors.shirt;
+                        ctx.fillRect(-10, 18, 20, 16);
+                        ctx.fillStyle = heroColors.shirtShadow;
+                        ctx.fillRect(3, 18, 7, 16);
+                        ctx.fillStyle = heroColors.shirtLight;
+                        ctx.fillRect(-9, 19, 5, 14);
+
+                        ctx.fillStyle = heroColors.skin;
+                        ctx.fillRect(-12 + armOffset, 20, 4, 10);
+                        ctx.fillRect(8 - armOffset, 20, 4, 10);
+
+                        ctx.fillStyle = heroColors.skin;
+                        ctx.beginPath();
+                        ctx.arc(0, 10, 10, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.skinShadow;
+                        ctx.beginPath();
+                        ctx.ellipse(5, 13, 3, 4, 0.3, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.hair;
+                        ctx.beginPath();
+                        ctx.arc(0, 5, 11, Math.PI, 0);
+                        ctx.fill();
+                        ctx.fillRect(-11, 3, 22, 5);
+
+                        ctx.fillStyle = heroColors.hairMid;
+                        ctx.beginPath();
+                        ctx.arc(0, 6, 8, Math.PI, 0);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.eyes;
+                        ctx.beginPath();
+                        ctx.arc(-4, 10, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(4, 10, 2, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.eyesHighlight;
+                        ctx.beginPath();
+                        ctx.arc(-3, 9, 1, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(5, 9, 1, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (direction === 'up') {
+                        ctx.fillStyle = heroColors.pants;
+                        ctx.fillRect(-8, 30, 6, 15 + (frame % 2 === 0 ? legOffset : -legOffset));
+                        ctx.fillRect(2, 30, 6, 15 + (frame % 2 === 0 ? -legOffset : legOffset));
+
+                        ctx.fillStyle = heroColors.pantsLight;
+                        ctx.fillRect(-7, 31, 4, 12 + (frame % 2 === 0 ? legOffset * 0.7 : -legOffset * 0.7));
+                        ctx.fillRect(3, 31, 4, 12 + (frame % 2 === 0 ? -legOffset * 0.7 : legOffset * 0.7));
+
+                        ctx.fillStyle = heroColors.shoes;
+                        ctx.fillRect(-10, 44 + (frame % 2 === 0 ? legOffset : -legOffset), 8, 4);
+                        ctx.fillRect(2, 44 + (frame % 2 === 0 ? -legOffset : legOffset), 8, 4);
+
+                        ctx.fillStyle = heroColors.shoesLight;
+                        ctx.fillRect(-9, 45 + (frame % 2 === 0 ? legOffset : -legOffset), 4, 2);
+                        ctx.fillRect(3, 45 + (frame % 2 === 0 ? -legOffset : legOffset), 4, 2);
+
+                        ctx.fillStyle = heroColors.shirt;
+                        ctx.fillRect(-10, 18, 20, 16);
+                        ctx.fillStyle = heroColors.shirtShadow;
+                        ctx.fillRect(3, 18, 7, 16);
+                        ctx.fillStyle = heroColors.shirtLight;
+                        ctx.fillRect(-9, 19, 5, 14);
+
+                        ctx.fillStyle = heroColors.skin;
+                        ctx.fillRect(-12 + armOffset, 20, 4, 10);
+                        ctx.fillRect(8 - armOffset, 20, 4, 10);
+
+                        ctx.fillStyle = heroColors.hair;
+                        ctx.beginPath();
+                        ctx.arc(0, 12, 10, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.hairMid;
+                        ctx.beginPath();
+                        ctx.arc(0, 11, 7, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.skin;
+                        ctx.beginPath();
+                        ctx.arc(0, 15, 9, 0, Math.PI);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.skinShadow;
+                        ctx.beginPath();
+                        ctx.ellipse(4, 17, 3, 3, 0.3, 0, Math.PI);
+                        ctx.fill();
+                    } else if (direction === 'left' || direction === 'right') {
+                        const isLeft = direction === 'left';
+                        
+                        ctx.save();
+                        if (isLeft) {
+                            ctx.scale(-1, 1);
+                        }
+                        
+                        ctx.fillStyle = heroColors.pants;
+                        ctx.fillRect(-4, 30, 6, 15 + (frame % 2 === 0 ? legOffset : -legOffset));
+                        ctx.fillRect(2, 30, 6, 15 + (frame % 2 === 0 ? -legOffset : legOffset));
+
+                        ctx.fillStyle = heroColors.pantsLight;
+                        ctx.fillRect(-3, 31, 4, 12 + (frame % 2 === 0 ? legOffset * 0.7 : -legOffset * 0.7));
+                        ctx.fillRect(3, 31, 4, 12 + (frame % 2 === 0 ? -legOffset * 0.7 : legOffset * 0.7));
+
+                        ctx.fillStyle = heroColors.shoes;
+                        ctx.fillRect(-6, 44 + (frame % 2 === 0 ? legOffset : -legOffset), 8, 4);
+                        ctx.fillRect(0, 44 + (frame % 2 === 0 ? -legOffset : legOffset), 8, 4);
+
+                        ctx.fillStyle = heroColors.shoesLight;
+                        ctx.fillRect(-5, 45 + (frame % 2 === 0 ? legOffset : -legOffset), 4, 2);
+                        ctx.fillRect(1, 45 + (frame % 2 === 0 ? -legOffset : legOffset), 4, 2);
+
+                        ctx.fillStyle = heroColors.shirt;
+                        ctx.fillRect(-8, 18, 16, 16);
+                        ctx.fillStyle = heroColors.shirtShadow;
+                        ctx.fillRect(0, 18, 8, 16);
+                        ctx.fillStyle = heroColors.shirtLight;
+                        ctx.fillRect(-7, 19, 5, 14);
+
+                        ctx.fillStyle = heroColors.skin;
+                        ctx.fillRect(-10 - armOffset, 20, 4, 10);
+                        ctx.fillRect(6 + armOffset, 20, 4, 10);
+
+                        ctx.fillStyle = heroColors.skin;
+                        ctx.beginPath();
+                        ctx.arc(0, 10, 9, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.skinShadow;
+                        ctx.beginPath();
+                        ctx.ellipse(3, 12, 3, 4, 0, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.hair;
+                        ctx.beginPath();
+                        ctx.arc(0, 4, 10, Math.PI, 0);
+                        ctx.fill();
+                        ctx.fillRect(-10, 1, 20, 6);
+                        ctx.beginPath();
+                        ctx.ellipse(-6, 7, 4, 6, 0, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.hairMid;
+                        ctx.beginPath();
+                        ctx.arc(0, 5, 7, Math.PI, 0);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.ellipse(-5, 7, 3, 4, 0, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = heroColors.eyes;
+                        ctx.beginPath();
+                        ctx.ellipse(2, 10, 3, 4, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = heroColors.eyesHighlight;
+                        ctx.beginPath();
+                        ctx.ellipse(2.5, 9, 1.5, 1.5, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = heroColors.outline;
+                        ctx.beginPath();
+                        ctx.arc(2, 10, 1.5, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.restore();
+                    }
+
+                    ctx.restore();
+                }, [direction, frame, size]);
+
+                return <canvas ref={canvasRef} width={size} height={size} style={{ imageRendering: 'pixelated' }} />;
+            };
+
+        const [playerDirection, setPlayerDirection] = useState('down');
+        const [playerWalkFrame, setPlayerWalkFrame] = useState(0);
+        const [isMoving, setIsMoving] = useState(false);
+        const moveFrameRef = useRef(null);
+
+        useEffect(() => {
+            if (isMoving) {
+                moveFrameRef.current = setInterval(() => {
+                    setPlayerWalkFrame(prev => (prev + 1) % 4);
+                }, 150);
+            } else {
+                clearInterval(moveFrameRef.current);
+                setPlayerWalkFrame(0);
+            }
+            return () => clearInterval(moveFrameRef.current);
+        }, [isMoving]);
+
+        const lastPlayerPosRef = useRef({ x: data.player.x, y: data.player.y });
+        useEffect(() => {
+            if (data.player.x !== lastPlayerPosRef.current.x || data.player.y !== lastPlayerPosRef.current.y) {
+                if (data.player.x > lastPlayerPosRef.current.x) setPlayerDirection('right');
+                else if (data.player.x < lastPlayerPosRef.current.x) setPlayerDirection('left');
+                else if (data.player.y > lastPlayerPosRef.current.y) setPlayerDirection('down');
+                else if (data.player.y < lastPlayerPosRef.current.y) setPlayerDirection('up');
+                
+                setIsMoving(true);
+                setTimeout(() => setIsMoving(false), 200);
+                
+                lastPlayerPosRef.current = { x: data.player.x, y: data.player.y };
+            }
+        }, [data.player.x, data.player.y]);
+
+        // --- UI 渲染提取 ---
+            const renderGame = () => {
+                const grid = [];
+                for (let y = 0; y < currentMap.h; y++) {
+                    for (let x = 0; x < currentMap.w; x++) {
+                        let isPlayer = data.player.x === x && data.player.y === y && data.player.levelId === currentMap.id;
+                        let npcOnTile = data.npcs.find(n => n.x === x && n.y === y && n.levelId === currentMap.id);
+                        let nodeOnTile = currentMap.nodes.find(n => n.x === x && n.y === y);
+                        let isAdjacent = npcOnTile && (Math.abs(data.player.x - x) + Math.abs(data.player.y - y) === 1);
+                        let isBlocked = (currentMap.blockedTiles || []).some(t => t.x === x && t.y === y);
+
+                        if (!isBlocked) {
+                            grid.push(
+                                <div key={`${x}-${y}`} className={`w-full h-full border border-slate-700/10 flex items-center justify-center relative transition-colors duration-300 bg-slate-800/80
+                                    ${nodeOnTile ? 'bg-indigo-900/20' : ''} 
+                                    ${isAdjacent ? 'ring-2 ring-blue-400 ring-inset cursor-pointer z-10 bg-blue-900/20' : ''}`}
+                                    onClick={() => isAdjacent && npcOnTile ? handleInteract(npcOnTile) : null}
+                                    title={nodeOnTile ? `${nodeOnTile.name}${nodeOnTile.desc ? ' - ' + nodeOnTile.desc : ''}` : ''}
+                                >
+                                    {nodeOnTile && <div className="absolute top-1 text-[9px] text-indigo-300/80 font-bold tracking-wider">{nodeOnTile.name}</div>}
+                                    {nodeOnTile && nodeOnTile.targetLevel && <Icon.Map c="w-1/2 h-1/2 text-indigo-500 opacity-20" />}
+                                    
+                                    {isPlayer && <div className="absolute w-3/4 h-3/4 bg-blue-500/20 rounded-full blur-md"></div>}
+                                    {isPlayer && (
+                                        <div className="absolute flex items-center justify-center">
+                                            <HeroSprite direction={playerDirection} frame={playerWalkFrame} size={48} />
+                                        </div>
+                                    )}
+                                    
+                                    {npcOnTile && (
+                                        <div className={`flex flex-col items-center absolute ${npcOnTile.bg} rounded-full p-1.5`}>
+                                            {npcOnTile.gender === 'male' ? <Icon.Male c={`${npcOnTile.color} w-6 h-6`} /> : <Icon.Female c={`${npcOnTile.color} w-6 h-6 drop-shadow-[0_0_8px_currentColor]`} />}
+                                            {isAdjacent && <span className="absolute -top-7 bg-slate-800 text-blue-300 border border-slate-600 text-[10px] px-2 py-0.5 rounded-md shadow-xl whitespace-nowrap font-bold">💬 对话</span>}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        } else {
+                            grid.push(
+                                <div key={`${x}-${y}`} className="w-full h-full border-0 bg-transparent"></div>
+                            );
+                        }
+                    }
+                }
+
+                return (
+                    <div className="flex flex-col items-center w-full max-w-md mx-auto h-full pt-4 px-3 select-none-all animate-fade-in">
+                        <div className="w-full flex flex-col glass-panel p-3 rounded-2xl mb-4 shadow-xl">
+                            <div className="flex justify-between items-center mb-3 border-b border-slate-700/50 pb-2">
+                                <h1 className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">{currentMap.name}</h1>
+                                <div className="flex space-x-2">
+                                    <button onClick={() => setView('calendar')} className="p-2 bg-yellow-600/20 border border-yellow-500/30 hover:bg-yellow-600/40 text-yellow-400 rounded-xl transition-all shadow-md"><Icon.Calendar c="w-5 h-5"/></button>
+                                    <button onClick={() => setView('settings')} className="p-2 bg-slate-800/80 hover:bg-slate-700 rounded-xl transition-all text-slate-300"><Icon.Settings c="w-5 h-5" /></button>
+                                </div>
+                            </div>
+                            <div className="flex justify-between text-xs text-slate-300 font-bold bg-slate-900/50 p-2 rounded-lg items-center">
+                                <span className="flex items-center text-indigo-300"><Icon.Clock c="w-4 h-4 mr-1.5"/> {formatTime(data.time)}</span>
+                                {currentMap.parent && <button onClick={() => setData(p => ({...p, currentLevelId: p.maps[p.currentLevelId].parent, player: {...p.player, levelId: p.maps[p.currentLevelId].parent}}))} className="text-blue-400 border border-blue-500/30 px-3 py-1 rounded bg-blue-900/20 hover:bg-blue-900/40 transition">返回大地图</button>}
+                            </div>
+                        </div>
+
+                        <div className="w-full aspect-square rounded-3xl overflow-hidden grid shadow-2xl p-1 relative" style={{ gridTemplateColumns: `repeat(${currentMap.w}, minmax(0, 1fr))`, background: 'transparent' }}>
+                            {grid}
+                        </div>
+
+                        <div className="mt-8 grid grid-cols-3 gap-3 w-56">
+                            <div />
+                            <button onClick={() => handleMovePlayer(0, -1)} className="glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowUp c="w-7 h-7"/></button>
+                            <div />
+                            <button onClick={() => handleMovePlayer(-1, 0)} className="glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowLeft c="w-7 h-7"/></button>
+                            <button onClick={() => handleMovePlayer(0, 1)} className="glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowDown c="w-7 h-7"/></button>
+                            <button onClick={() => handleMovePlayer(1, 0)} className="glass-panel text-blue-300 p-4 rounded-2xl flex justify-center active:scale-95 transition-all shadow-lg hover:bg-slate-700/50"><Icon.ArrowRight c="w-7 h-7"/></button>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderChat = () => {
+                if (!activeNpcId) return null;
+                const npc = data.npcs.find(n => n.id === activeNpcId);
+                const history = logs[activeNpcId] || [];
+
+                return (
+                    <div className="flex flex-col h-full w-full sm:max-w-md mx-auto sm:py-6 animate-slide-up">
+                        <div className="flex-1 flex flex-col glass-panel sm:rounded-3xl overflow-hidden shadow-2xl">
+                            <div className="flex flex-col p-4 bg-slate-800/90 border-b border-slate-700/50 shrink-0 z-10">
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center space-x-3">
+                                        <div className={`${npc.bg} p-2 rounded-xl`}><Icon.Female c={`${npc.color} w-6 h-6 drop-shadow-[0_0_8px_currentColor]`} /></div>
+                                        <div><h2 className="font-bold text-slate-100 text-lg">{npc.name}</h2></div>
+                                    </div>
+                                    <button onClick={() => setView('game')} className="p-2 hover:bg-slate-600 rounded-full text-slate-300"><Icon.X c="w-5 h-5" /></button>
+                                </div>
+                                <div className="text-[10px] text-slate-400 text-center uppercase tracking-wider">行动日志与对话流</div>
+                            </div>
+
+                            <div ref={logScrollRef} className="flex-1 p-4 overflow-y-auto space-y-5 no-scrollbar bg-slate-900/40">
+                                {history.filter(msg => msg.type !== 'action').length === 0 && <div className="flex h-full items-center justify-center text-slate-500 text-sm">暂无交互记录</div>}
+                                {history.filter(msg => msg.type !== 'action').map((msg) => {
+                                    
+                                    const isUser = msg.role === 'user';
+                                    let htmlBlocks = [];
+                                    if (data.settings.enableCodeExecution && !isUser && typeof msg.content === 'string') {
+                                        const codeBlockRegex = new RegExp('\\x60\\x60\\x60(?:html|javascript|js)?\\n([\\s\\S]*?)\\x60\\x60\\x60', 'g');
+                                        const matches = msg.content.match(codeBlockRegex) || [];
+                                        const replacer = new RegExp('\\x60\\x60\\x60(?:html|javascript|js)?\\n|\\x60\\x60\\x60', 'g');
+                                        htmlBlocks = matches.map(b => b.replace(replacer, ''));
+                                    }
+
+                                    return (
+                                        <div key={msg.id} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-pop-in`}>
+                                            <span className="text-[9px] text-slate-500 mb-1 opacity-70 px-1">{msg.time.substring(11)}</span>
+                                            
+                                            {!isUser && (
+                                                <div className="flex items-center space-x-1 mb-1">
+                                                    <button 
+                                                        onClick={() => regenerateMessage(msg.id)} 
+                                                        disabled={regeneratingMessageId === msg.id || isTyping}
+                                                        className="p-1.5 hover:bg-slate-700/50 rounded-lg transition-all disabled:opacity-30"
+                                                        title="重新生成"
+                                                    >
+                                                        {regeneratingMessageId === msg.id ? 
+                                                            <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div> : 
+                                                            <Icon.Refresh c="w-4 h-4 text-indigo-400" />
+                                                        }
+                                                    </button>
+                                                    {editingMessageId === msg.id ? (
+                                                        <button 
+                                                            onClick={() => saveEditMessage(msg.id)}
+                                                            className="p-1.5 hover:bg-emerald-700/50 rounded-lg transition-all"
+                                                            title="保存"
+                                                        >
+                                                            <Icon.Save c="w-4 h-4 text-emerald-400" />
+                                                        </button>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => startEditMessage(msg)}
+                                                            className="p-1.5 hover:bg-yellow-700/50 rounded-lg transition-all"
+                                                            title="编辑"
+                                                        >
+                                                            <Icon.Edit c="w-4 h-4 text-yellow-400" />
+                                                        </button>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => deleteMessage(msg.id)}
+                                                        className="p-1.5 hover:bg-red-700/50 rounded-lg transition-all"
+                                                        title="删除"
+                                                    >
+                                                        <Icon.Trash c="w-4 h-4 text-red-400" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            
+                                            <div className={`msg-bubble max-w-[90%] p-3.5 leading-relaxed shadow-lg ${isUser ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm' : 'bg-slate-800 border border-slate-700/50 text-slate-200 rounded-2xl rounded-tl-sm'}`}>
+                                                {!isUser && editingMessageId === msg.id ? (
+                                                    <textarea
+                                                        value={editingMessageContent}
+                                                        onChange={(e) => setEditingMessageContent(e.target.value)}
+                                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm outline-none focus:border-blue-500 resize-none min-h-[80px]"
+                                                        autoFocus
+                                                    />
+                                                ) : (
+                                                    data.settings.enableCodeRender ? 
+                                                    <div className="markdown-body text-[14px]" dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) }} /> : 
+                                                    <span className="whitespace-pre-wrap text-[14px]">{msg.content}</span>
+                                                )}
+                                            </div>
+                                            {!isUser && data.settings.enableCodeExecution && htmlBlocks.map((block, i) => (
+                                                <div key={i} className="max-w-[90%] w-full mt-2 self-start"><ExecutableBlock htmlCode={block} /></div>
+                                            ))}
+                                        </div>
+                                    );
+                                })}
+                                {isTyping && (
+                                    <div className="flex justify-start animate-fade-in">
+                                        <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl rounded-tl-sm flex space-x-1.5">
+                                            <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></div>
+                                            <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{animationDelay:'0.2s'}}></div>
+                                            <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{animationDelay:'0.4s'}}></div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-3 bg-slate-800/90 border-t border-slate-700/50 pb-safe shrink-0">
+                                <div className="flex space-x-2 items-end">
+                                    <textarea 
+                                        value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDirectMessage(); } }}
+                                        placeholder={`对 ${npc.name} 说话...`} className="flex-1 px-4 py-3 bg-slate-900 border border-slate-700/50 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-500 resize-none h-12 max-h-32 no-scrollbar" disabled={isTyping}
+                                    />
+                                    <button onClick={sendDirectMessage} disabled={isTyping || !inputText.trim()} className="bg-blue-600 text-white p-3 rounded-2xl hover:bg-blue-500 disabled:opacity-50 shrink-0"><Icon.Send c="w-6 h-6" /></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderCalendar = () => {
+                const dates = Object.keys(stories).sort((a,b)=> new Date(b) - new Date(a));
+                const activeDate = selectedDate || (dates.length > 0 ? dates[0] : null);
+                const activeStories = activeDate ? stories[activeDate] : [];
+
+                return (
+                    <div className="flex flex-col h-full w-full max-w-2xl mx-auto sm:py-6 animate-slide-up text-sm">
+                        <div className="flex-1 flex flex-col glass-panel sm:rounded-3xl shadow-2xl overflow-hidden">
+                            <div className="flex items-center justify-between p-4 bg-slate-800/90 border-b border-slate-700 shrink-0">
+                                <h2 className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600 flex items-center"><Icon.Book c="w-6 h-6 mr-2 text-yellow-500"/> 命运之书 (全镇记录)</h2>
+                                <button onClick={() => setView('game')} className="p-2 bg-slate-700/50 hover:bg-slate-600 rounded-full text-slate-300"><Icon.X c="w-5 h-5"/></button>
+                            </div>
+                            <div className="flex flex-1 overflow-hidden">
+                                <div className="w-1/3 border-r border-slate-700 bg-slate-900/50 overflow-y-auto p-2 space-y-1">
+                                    {dates.length === 0 && <div className="text-slate-500 text-center mt-5 text-xs">暂无记载</div>}
+                                    {dates.map(d => (
+                                        <button key={d} onClick={()=>setSelectedDate(d)} className={`w-full text-left p-3 rounded-xl transition-all font-bold ${activeDate===d ? 'bg-yellow-600/20 text-yellow-400 border border-yellow-500/30' : 'text-slate-400 hover:bg-slate-800'}`}>
+                                            {d}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="w-2/3 p-5 overflow-y-auto space-y-6 bg-slate-900/30">
+                                    {!activeDate && <div className="text-center text-slate-500 mt-10">时间长河依旧平静...</div>}
+                                    {activeStories.map((s, i) => (
+                                        <div key={i} className="animate-fade-in">
+                                            <div className="flex items-center text-yellow-500/70 font-bold mb-2 border-b border-yellow-900/30 pb-1">
+                                                <Icon.Clock c="w-4 h-4 mr-2"/> 观测时点: {s.time}
+                                            </div>
+                                            <div className="text-slate-300 leading-loose text-[15px] indent-8 text-justify font-serif tracking-wide">{s.content}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderGlobalApiTab = () => (
+                <div className="bg-slate-800/80 p-5 rounded-2xl border border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)] animate-fade-in">
+                    <h3 className="font-bold text-yellow-400 mb-2 flex items-center text-sm"><Icon.Settings c="w-5 h-5 mr-2"/>全局上帝 API (核心引擎)</h3>
+                    <p className="text-xs text-slate-400 mb-4 leading-relaxed">用于抓取所有角色的记忆与行动，在后台自动撰写《命运之书》小说情节。</p>
+                    
+                    <div className="flex space-x-2 mb-3">
+                        <input type="text" placeholder="Base URL (例如 https://api.openai.com/v1)" value={data.globalApi.baseUrl} onChange={e=>setData(p=>({...p, globalApi:{...p.globalApi, baseUrl:e.target.value}}))} className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-yellow-500 text-slate-200" />
+                        <button onClick={()=>fetchModels('global', data.globalApi)} className="bg-yellow-600/20 text-yellow-400 border border-yellow-500/50 px-3 rounded-lg text-xs font-bold hover:bg-yellow-600 hover:text-white transition whitespace-nowrap">
+                            {apiStatus['global']?.loading ? '...' : '获取列表'}
+                        </button>
+                    </div>
+                    <input type="password" placeholder="API Key" value={data.globalApi.apiKey} onChange={e=>setData(p=>({...p, globalApi:{...p.globalApi, apiKey:e.target.value}}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm mb-3 outline-none focus:border-yellow-500 text-slate-200" />
+                    
+                    <div className="flex space-x-2 items-center">
+                        {!data.globalApi.customModel ? (
+                            <select value={data.globalApi.model} onChange={e=>setData(p=>({...p, globalApi:{...p.globalApi, model:e.target.value}}))} className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-yellow-500 text-slate-200">
+                                <option value="">-- 请从列表中选择 --</option>
+                                {(modelLists['global'] || []).map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
+                        ) : (
+                            <input type="text" placeholder="手动输入模型 ID" value={data.globalApi.model} onChange={e=>setData(p=>({...p, globalApi:{...p.globalApi, model:e.target.value}}))} className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-yellow-500 text-slate-200" />
+                        )}
+                        <label className="flex items-center text-xs text-slate-400 cursor-pointer bg-slate-800 p-2.5 rounded-lg border border-slate-700"><input type="checkbox" checked={data.globalApi.customModel} onChange={e=>setData(p=>({...p, globalApi:{...p.globalApi, customModel:e.target.checked}}))} className="mr-2"/>手填</label>
+                    </div>
+                    {apiStatus['global']?.msg && <div className="text-[10px] mt-2 text-yellow-500">{apiStatus['global'].msg}</div>}
+                </div>
+            );
+
+            const renderSystemTab = () => (
+                <div className="space-y-4 animate-fade-in">
+                    <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700">
+                        <h3 className="font-bold text-blue-400 mb-3 text-sm">系统时间修改</h3>
+                        <div className="grid grid-cols-5 gap-2 mb-2 bg-slate-900/50 p-2 rounded-xl">
+                            {Object.keys(data.time).map(k => (
+                                <div key={k} className="flex flex-col text-center">
+                                    <span className="text-[10px] text-slate-500 font-bold mb-1">{k==='year'?'年':k==='month'?'月':k==='day'?'日':k==='hour'?'时':'分'}</span>
+                                    <input type="number" value={data.time[k]} onChange={e => setData(p=>({...p, time:{...p.time, [k]:Number(e.target.value)}}))} className="w-full bg-slate-800 border border-slate-700 rounded text-xs p-1 text-center outline-none focus:border-blue-500 text-blue-200"/>
+                                </div>
+                            ))}
+                        </div>
+                        <label className="flex items-center justify-between py-2 text-xs"><span>时停模式 (移动无时间流逝)</span><input type="checkbox" checked={data.settings.noTimeMode} onChange={e=>setData(p=>({...p, settings: {...p.settings, noTimeMode: e.target.checked}}))} className="w-4 h-4" /></label>
+                    </div>
+                    <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700">
+                        <h3 className="font-bold text-indigo-400 mb-3 text-sm">引擎心跳</h3>
+                        <div className="mb-3"><label className="block text-xs text-slate-400 mb-1">NPC 独立行动间隔 (分钟)</label><input type="number" value={data.settings.npcActionInterval} onChange={e=>setData(p=>({...p, settings: {...p.settings, npcActionInterval: Number(e.target.value)}}))} className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none" /></div>
+                        <div><label className="block text-xs text-slate-400 mb-1">上帝AI撰写小说结算间隔 (分钟)</label><input type="number" value={data.settings.storyInterval} onChange={e=>setData(p=>({...p, settings: {...p.settings, storyInterval: Number(e.target.value)}}))} className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none" /></div>
+                    </div>
+                    <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700">
+                        <h3 className="font-bold text-orange-400 mb-3 text-sm">生成参数 (Generation)</h3>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div><label className="block text-xs text-slate-400 mb-1">最大令牌数 (Max Tokens)</label><input type="number" value={data.settings.generation.maxTokens} onChange={e=>setData(p=>({...p, settings: {...p.settings, generation: {...p.settings.generation, maxTokens: Number(e.target.value)}}}))} className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none" /></div>
+                            <div><label className="block text-xs text-slate-400 mb-1">温度 (Temperature)</label><input type="number" step="0.1" value={data.settings.generation.temperature} onChange={e=>setData(p=>({...p, settings: {...p.settings, generation: {...p.settings.generation, temperature: Number(e.target.value)}}}))} className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none" /></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div><label className="block text-xs text-slate-400 mb-1">Top P</label><input type="number" step="0.05" value={data.settings.generation.topP} onChange={e=>setData(p=>({...p, settings: {...p.settings, generation: {...p.settings.generation, topP: Number(e.target.value)}}}))} className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none" /></div>
+                            <div><label className="block text-xs text-slate-400 mb-1">频率惩罚 (Freq. Penalty)</label><input type="number" step="0.1" value={data.settings.generation.frequencyPenalty} onChange={e=>setData(p=>({...p, settings: {...p.settings, generation: {...p.settings.generation, frequencyPenalty: Number(e.target.value)}}}))} className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none" /></div>
+                        </div>
+                        <label className="flex items-center justify-between py-2 text-xs border-t border-slate-700 mt-2 pt-3"><span>开启代码执行 (运行HTML/JS)</span><input type="checkbox" checked={data.settings.enableCodeExecution} onChange={e=>setData(p=>({...p, settings: {...p.settings, enableCodeExecution: e.target.checked}}))} className="w-4 h-4" /></label>
+                    </div>
+                    <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 shadow-lg">
+                        <h3 className="font-bold text-purple-400 mb-4 text-sm flex items-center"> 正则过滤规则</h3>
+                        {data.settings.regexRules.map((rule, idx) => (
+                            <div key={rule.id} className="flex space-x-2 mb-3 items-center">
+                                <input type="text" placeholder="正则: \[.*?\]" value={rule.pattern} onChange={e=>{const nr=[...data.settings.regexRules];nr[idx].pattern=e.target.value;setData(p=>({...p, settings: {...p.settings, regexRules: nr}}));}} className="flex-1 w-0 bg-slate-900 border border-slate-700 text-xs p-2 rounded outline-none font-mono" />
+                                <input type="text" placeholder="替换为" value={rule.replace} onChange={e=>{const nr=[...data.settings.regexRules];nr[idx].replace=e.target.value;setData(p=>({...p, settings: {...p.settings, regexRules: nr}}));}} className="w-16 bg-slate-900 border border-slate-700 text-xs p-2 rounded outline-none" />
+                                <button onClick={()=>{const nr=data.settings.regexRules.filter((_,i)=>i!==idx);setData(p=>({...p, settings: {...p.settings, regexRules: nr}}));}} className="text-red-400 p-2"><Icon.Trash c="w-4 h-4"/></button>
+                            </div>
+                        ))}
+                        <button onClick={()=>{setData(p=>({...p, settings: {...p.settings, regexRules: [...p.settings.regexRules, {id:generateId(), pattern:'', flags:'g', replace:''}]}}))}} className="w-full py-2 border border-dashed border-purple-500/50 text-purple-400 rounded text-xs hover:bg-purple-900/20">+ 新增规则</button>
+                    </div>
+                </div>
+            );
+
+            const renderPromptsTab = () => {
+                const activeFlow = promptFlowTab === 'chat' ? data.promptFlowChat : promptFlowTab === 'action' ? data.promptFlowAction : data.promptFlowStory;
+                const updateFlow = (newFlow) => {
+                    if (promptFlowTab === 'chat') setData(p=>({...p, promptFlowChat: newFlow}));
+                    else if (promptFlowTab === 'action') setData(p=>({...p, promptFlowAction: newFlow}));
+                    else setData(p=>({...p, promptFlowStory: newFlow}));
+                };
+                
+                const sortedFlow = [...activeFlow].sort((a,b)=>a.order-b.order);
+
+                const handleDragStart = (e, prompt) => {
+                    setDraggingPrompt(prompt.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                };
+
+                const handleDragOver = (e, index) => {
+                    e.preventDefault();
+                    if (draggingPrompt && dragOverIndex !== index) {
+                        setDragOverIndex(index);
+                    }
+                };
+
+                const handleDrop = (e, targetIndex) => {
+                    e.preventDefault();
+                    if (draggingPrompt) {
+                        const dragIndex = sortedFlow.findIndex(p => p.id === draggingPrompt);
+                        if (dragIndex !== -1 && dragIndex !== targetIndex) {
+                            const newArr = [...sortedFlow];
+                            const [removed] = newArr.splice(dragIndex, 1);
+                            newArr.splice(targetIndex, 0, removed);
+                            newArr.forEach((x, i) => x.order = i);
+                            updateFlow(newArr);
+                        }
+                    }
+                    setDraggingPrompt(null);
+                    setDragOverIndex(null);
+                };
+
+                const handleDragEnd = () => {
+                    setDraggingPrompt(null);
+                    setDragOverIndex(null);
+                };
+                
+                return (
+                <div className="space-y-4 animate-fade-in">
+                    <div className="flex p-1 bg-slate-900 rounded-xl">
+                        <button onClick={()=>setPromptFlowTab('chat')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${promptFlowTab==='chat'?'bg-blue-600 text-white':'text-slate-400'}`}>主动对话</button>
+                        <button onClick={()=>setPromptFlowTab('action')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${promptFlowTab==='action'?'bg-indigo-600 text-white':'text-slate-400'}`}>后台行动</button>
+                        <button onClick={()=>setPromptFlowTab('story')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${promptFlowTab==='story'?'bg-yellow-600 text-white':'text-slate-400'}`}>上帝小说</button>
+                    </div>
+                    <div className="flex gap-2 mb-3">
+                        <label className="flex-1 py-2 bg-green-600/20 border border-green-500/50 text-green-400 rounded-xl font-bold text-xs hover:bg-green-600/30 flex items-center justify-center cursor-pointer">
+                            <input type="file" accept="application/json,.json" className="hidden" onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                    handleImportTavernPreset(e.target.files[0]);
+                                    e.target.value = '';
+                                }
+                            }} />
+                            📥 导入酒馆提示词流
+                        </label>
+                    </div>
+                    <div className="bg-slate-800 p-3 rounded-xl text-xs text-slate-400 leading-relaxed border border-slate-700">
+                        此界面为提示词的**组装车间**。发送给 API 时，会自上而下拼接打勾的条目（越靠下权重越高）。<span className="text-blue-300 font-bold">💡 提示：可直接拖动左侧拖拽手柄来重新排序！</span>
+                    </div>
+                    {sortedFlow.map((p, idx) => (
+                        <div 
+                            key={p.id} 
+                            className={`bg-slate-800/80 border ${p.enabled?'border-blue-500/30':'border-slate-700/50 opacity-50'} rounded-2xl p-3 flex items-center
+                                ${draggingPrompt === p.id ? 'opacity-50 bg-slate-700' : ''}
+                                ${dragOverIndex === idx && draggingPrompt !== p.id ? 'border-t-4 border-t-blue-500' : ''}`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, p)}
+                            onDragOver={(e) => handleDragOver(e, idx)}
+                            onDrop={(e) => handleDrop(e, idx)}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <div className="cursor-grab active:cursor-grabbing p-2 mr-1 text-slate-500 hover:text-slate-300">
+                                <Icon.Menu c="w-4 h-4" />
+                            </div>
+                            <button onClick={()=>{updateFlow(activeFlow.map(x=>x.id===p.id?{...x,enabled:!x.enabled}:x))}} className="p-2 mr-2 outline-none">
+                                {p.enabled ? <Icon.Eye c="w-5 h-5 text-emerald-400" /> : <Icon.EyeOff c="w-5 h-5 text-slate-500" />}
+                            </button>
+                            <div className="flex-1 min-w-0 pr-2">
+                                {p.type === 'system' ? (
+                                    <><input type="text" value={p.name} onChange={e=>{const nf=[...activeFlow];nf.find(x=>x.id===p.id).name=e.target.value;updateFlow(nf)}} className="bg-transparent font-bold text-sm text-blue-200 outline-none border-b border-slate-600 w-full mb-1"/><textarea value={p.content} onChange={e=>{const nf=[...activeFlow];nf.find(x=>x.id===p.id).content=e.target.value;updateFlow(nf)}} rows={2} className="w-full bg-slate-900/50 border border-slate-700 rounded p-1 text-[10px] text-slate-300 outline-none resize-none font-mono"/></>
+                                ) : (
+                                    <><div className="font-bold text-sm text-slate-200 truncate">{p.name}</div><div className="text-[10px] text-slate-500 truncate">{p.content}</div></>
+                                )}
+                            </div>
+                            <div className="flex flex-col bg-slate-900 rounded-lg border border-slate-700">
+                                <button onClick={()=>{
+                                    const arr=[...activeFlow].sort((a,b)=>a.order-b.order);
+                                    if(idx===0) return; [arr[idx], arr[idx-1]] = [arr[idx-1], arr[idx]];
+                                    arr.forEach((x,i)=>x.order=i); updateFlow(arr);
+                                }} disabled={idx===0} className="p-1 hover:bg-slate-700 disabled:opacity-30"><Icon.ArrowUp c="w-4 h-4 text-slate-400"/></button>
+                                <div className="h-px bg-slate-700"></div>
+                                <button onClick={()=>{
+                                    const arr=[...activeFlow].sort((a,b)=>a.order-b.order);
+                                    if(idx===arr.length-1) return; [arr[idx], arr[idx+1]] = [arr[idx+1], arr[idx]];
+                                    arr.forEach((x,i)=>x.order=i); updateFlow(arr);
+                                }} disabled={idx===activeFlow.length-1} className="p-1 hover:bg-slate-700 disabled:opacity-30"><Icon.ArrowDown c="w-4 h-4 text-slate-400"/></button>
+                            </div>
+                            {p.type === 'system' && <button onClick={()=>{updateFlow(activeFlow.filter(x=>x.id!==p.id))}} className="ml-2 text-red-400 p-2"><Icon.Trash c="w-4 h-4"/></button>}
+                        </div>
+                    ))}
+                    <button onClick={()=>{updateFlow([...activeFlow, {id:generateId(), type:'system', name:'自定义指令', content:'', enabled:true, order:activeFlow.length}])}} className="w-full py-3 bg-slate-800 border border-dashed border-blue-500/50 text-blue-400 rounded-2xl font-bold">+ 新增系统指令块</button>
+                </div>
+                );
+            };
+
+            const renderWorldbooksTab = () => (
+                <div className="space-y-4 animate-fade-in">
+                    <div className="bg-blue-900/20 text-blue-300 border border-blue-800/50 p-3 rounded-xl text-xs leading-relaxed">
+                        【世界书】你在这里创建的条目，会自动注入到所有提示词流的“世界书容器”中。
+                    </div>
+                    {data.worldbooks.map((wb, idx) => (
+                        <div key={wb.id} className="bg-slate-800/80 border border-slate-700/50 rounded-2xl p-4 shadow-lg">
+                            <div className="flex justify-between items-center mb-3">
+                                <label className="flex items-center"><input type="checkbox" checked={wb.enabled} onChange={e=>{const n=[...data.worldbooks];n[idx].enabled=e.target.checked;setData(d=>({...d,worldbooks:n}));}} className="mr-2" /><input type="text" value={wb.title} onChange={e=>{const n=[...data.worldbooks];n[idx].title=e.target.value;setData(d=>({...d,worldbooks:n}));}} className="bg-transparent font-bold text-sm text-blue-200 outline-none border-b border-slate-600 w-48"/></label>
+                                <button onClick={()=>{setData(d=>({...d, worldbooks: d.worldbooks.filter((_,i)=>i!==idx)}));}} className="text-red-400 p-1"><Icon.Trash c="w-4 h-4"/></button>
+                            </div>
+                            <textarea value={wb.content} onChange={e=>{const n=[...data.worldbooks];n[idx].content=e.target.value;setData(d=>({...d,worldbooks:n}));}} rows={4} className="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-xs outline-none focus:border-blue-500 resize-none font-mono text-slate-300" placeholder="详细设定内容..." />
+                        </div>
+                    ))}
+                    <button onClick={()=>{setData(d=>({...d, worldbooks:[...d.worldbooks, {id:generateId(), title:'新设定', enabled:true, content:''}]}))}} className="w-full py-4 bg-slate-800 border border-dashed border-blue-500/50 text-blue-400 rounded-2xl font-bold">+ 新建世界设定</button>
+                </div>
+            );
+
+            const renderPlayerTab = () => (
+                <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 shadow-lg space-y-4 animate-fade-in">
+                    <div className="flex space-x-2">
+                        <div className="flex-1"><label className="block text-xs font-bold text-slate-400 mb-1">你的名字</label><input type="text" value={data.player.name} onChange={e=>setData(p=>({...p,player:{...p.player,name:e.target.value}}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500 font-bold" /></div>
+                        <div className="w-24"><label className="block text-xs font-bold text-slate-400 mb-1">性别</label><select value={data.player.gender} onChange={e=>setData(p=>({...p,player:{...p.player,gender:e.target.value}}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm outline-none"><option value="male">男</option><option value="female">女</option><option value="other">其他</option></select></div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">玩家详情设定 (外貌、能力)</label>
+                        <textarea value={data.player.desc} onChange={e=>setData(p=>({...p,player:{...p.player,desc:e.target.value}}))} rows={5} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 resize-none leading-relaxed" />
+                    </div>
+                </div>
+            );
+
+            const renderNpcsTab = () => (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex gap-3">
+                        <button onClick={()=>{
+                            setData(p=>({...p, npcs:[...p.npcs, {
+                                id: 'npc_'+generateId(), name: '新角色', gender: 'female', desc: '', personality: '', scenario: '', memory: '', mesExamples: '', firstMsgEnabled: false, firstMsg: '', x: 0, y: 0, levelId: data.currentLevelId, color: 'text-slate-400', bg: 'bg-slate-500/20', promptTemplate: '你的名字是{{name}}。设定：{{desc}}。当前时间：{{time}}。你的位置：{{map_info}}。', apiMain: { baseUrl: '', apiKey: '', model: '', customModel: false }
+                            }]}));
+                        }} className="flex-1 py-3 bg-blue-600/20 border border-blue-500/50 text-blue-400 rounded-2xl font-bold hover:bg-blue-600/30">+ 创建新角色</button>
+                        <label className="flex-1 py-3 bg-purple-600/20 border border-purple-500/50 text-purple-400 rounded-2xl font-bold hover:bg-purple-600/30 flex items-center justify-center cursor-pointer">
+                            <input type="file" accept="application/json,image/png,image/jpeg,.json,.png,.jpg,.jpeg" className="hidden" onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                    handleImportTavernFile(e.target.files[0]);
+                                    e.target.value = '';
+                                }
+                            }} />
+                            📥 导入角色卡
+                        </label>
+                    </div>
+                    <div className="bg-purple-900/20 text-purple-300 border border-purple-800/50 p-3 rounded-xl text-xs leading-relaxed">
+                        支持导入 SillyTavern/TavernAI 的角色卡片（JSON、PNG 或 JPG 格式，V1/V2/V3）。导入的角色会出现在当前地图的中心位置。
+                    </div>
+
+                    {data.npcs.map((npc, npcIdx) => {
+                        const previewTab = npcPreviewTabs[npc.id] || 'chat';
+                        const setPreviewTab = (tab) => setNpcPreviewTabs(p => ({...p, [npc.id]: tab}));
+                        const previewPrompt = buildSystemPrompt(previewTab, npc, previewTab==='action'?[]:null);
+
+                        return (
+                        <div key={npc.id} className="bg-slate-800/80 p-5 rounded-3xl border border-slate-700/50 shadow-xl relative overflow-hidden mt-6">
+                            <div className={`absolute top-0 left-0 w-1 h-full ${npc.bg} opacity-50`}></div>
+                            <div className="flex items-center justify-between mb-4 border-b border-slate-700/50 pb-3">
+                                <div className="flex items-center">
+                                    <div className={`${npc.bg} p-2 rounded-xl mr-3`}>{npc.gender==='male'?<Icon.Male c={`${npc.color} w-5 h-5`} />:<Icon.Female c={`${npc.color} w-5 h-5`} />}</div>
+                                    <input type="text" value={npc.name} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, name:e.target.value} : n)}))} className="bg-transparent font-extrabold text-lg w-24 outline-none text-slate-100 border-b border-slate-600 focus:border-blue-500" />
+                                </div>
+                                <div className="flex space-x-2">
+                                    <select value={npc.gender} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, gender:e.target.value} : n)}))} className="bg-slate-900 border border-slate-700 rounded p-1 text-xs outline-none"><option value="male">男</option><option value="female">女</option><option value="other">保密</option></select>
+                                    <button onClick={()=>{if(confirm('确认删除角色？')){setData(d=>({...d, npcs:d.npcs.filter(x=>x.id!==npc.id)})); setLogs(l=>{const nl={...l}; delete nl[npc.id]; return nl;}); if(activeNpcId===npc.id){setActiveNpcId(null); setView('game');}}}} className="text-red-400 p-1 hover:bg-red-900/30 rounded"><Icon.Trash c="w-4 h-4"/></button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div><label className="block text-[10px] font-bold text-slate-400 mb-1">外貌与背景 (Description)</label><textarea value={npc.desc} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, desc:e.target.value} : n)}))} rows={3} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs outline-none focus:border-blue-500 resize-none" /></div>
+                                    <div><label className="block text-[10px] font-bold text-slate-400 mb-1">性格设定 (Personality)</label><textarea value={npc.personality} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, personality:e.target.value} : n)}))} rows={3} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs outline-none focus:border-blue-500 resize-none" /></div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div><label className="block text-[10px] font-bold text-slate-400 mb-1">场景设定 (Scenario)</label><textarea value={npc.scenario} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, scenario:e.target.value} : n)}))} rows={2} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs outline-none focus:border-blue-500 resize-none" /></div>
+                                    <div><label className="block text-[10px] font-bold text-indigo-400 mb-1">角色私有记忆 (Memory)</label><textarea value={npc.memory} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, memory:e.target.value} : n)}))} rows={2} placeholder="写入让角色记住的重要事件..." className="w-full bg-slate-900 border border-indigo-900/50 rounded-xl p-2 text-xs outline-none focus:border-indigo-500 resize-none text-indigo-200" /></div>
+                                </div>
+
+                                <div><label className="block text-[10px] font-bold text-slate-400 mb-1">对话示例 (MesExamples)</label><textarea value={npc.mesExamples} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, mesExamples:e.target.value} : n)}))} rows={3} placeholder="<START>\n{{user}}: ...\n{{char}}: ..." className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-[10px] font-mono outline-none focus:border-blue-500 resize-none text-slate-300" /></div>
+                                <div><label className="block text-[10px] font-bold text-emerald-400 mb-1">系统模板 (Prompt Template)</label><textarea value={npc.promptTemplate} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, promptTemplate:e.target.value} : n)}))} rows={2} className="w-full bg-slate-900/80 border border-emerald-900/50 rounded-xl p-2 text-[10px] outline-none focus:border-emerald-500 font-mono text-emerald-200 resize-none" /></div>
+
+                                {npc.tavernData && (
+                                    <div className="bg-slate-900/50 p-3 rounded-xl border border-purple-500/30">
+                                        <div className="text-[11px] text-purple-400 font-bold uppercase mb-2">酒馆角色卡扩展数据</div>
+                                        <div className="grid grid-cols-2 gap-2 mb-2 text-[10px]">
+                                            {npc.tavernData.spec && <div className="text-slate-400">规范: <span className="text-slate-200">{npc.tavernData.spec}</span></div>}
+                                            {npc.tavernData.creator && <div className="text-slate-400">作者: <span className="text-slate-200">{npc.tavernData.creator}</span></div>}
+                                            {npc.tavernData.character_version && <div className="text-slate-400">版本: <span className="text-slate-200">{npc.tavernData.character_version}</span></div>}
+                                            {npc.tavernData.extensions?.talkativeness && <div className="text-slate-400">活跃度: <span className="text-slate-200">{npc.tavernData.extensions.talkativeness}</span></div>}
+                                            {npc.tavernData.extensions?.world && <div className="text-slate-400">世界: <span className="text-slate-200">{npc.tavernData.extensions.world}</span></div>}
+                                        </div>
+                                        {npc.tavernData.tags && npc.tavernData.tags.length > 0 && (
+                                            <div className="mb-2">
+                                                <span className="text-slate-400 text-[10px]">标签: </span>
+                                                {npc.tavernData.tags.map((tag, i) => (
+                                                    <span key={i} className="inline-block bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded text-[9px] mr-1 mb-1">{tag}</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {(npc.tavernData.character_book?.entries?.length > 0 || npc.tavernData.extensions?.regex_scripts?.length > 0 || npc.tavernData.extensions?.depth_prompt) && (
+                                            <div className="text-[10px] text-slate-400 mb-2">
+                                                {npc.tavernData.character_book?.entries?.length > 0 && <div>📚 世界书条目: {npc.tavernData.character_book.entries.length}</div>}
+                                                {npc.tavernData.extensions?.regex_scripts?.length > 0 && <div>⚙️ 正则脚本: {npc.tavernData.extensions.regex_scripts.length}</div>}
+                                                {npc.tavernData.alternate_greetings?.length > 0 && <div>💬 开场白: {npc.tavernData.alternate_greetings.length}</div>}
+                                                {npc.tavernData.extensions?.depth_prompt?.depth && <div>📊 深度提示词深度: {npc.tavernData.extensions.depth_prompt.depth}</div>}
+                                            </div>
+                                        )}
+                                        {npc.tavernData.creator_notes && (
+                                            <div className="mt-2">
+                                                <div className="text-slate-400 text-[10px] mb-1">创建者备注:</div>
+                                                <div className="bg-slate-950 p-2 rounded text-[9px] text-slate-300 max-h-20 overflow-y-auto">{npc.tavernData.creator_notes}</div>
+                                            </div>
+                                        )}
+                                        {npc.tavernData.extensions?.depth_prompt?.prompt && (
+                                            <div className="mt-2">
+                                                <div className="text-slate-400 text-[10px] mb-1">深度提示词:</div>
+                                                <div className="bg-slate-950 p-2 rounded text-[9px] text-slate-300 max-h-20 overflow-y-auto">{npc.tavernData.extensions.depth_prompt.prompt}</div>
+                                            </div>
+                                        )}
+                                        {npc.tavernData.extensions && Object.keys(npc.tavernData.extensions).length > 0 && (
+                                            <div className="mt-2">
+                                                <div className="text-slate-400 text-[10px] mb-1">完整 Extensions JSON:</div>
+                                                <textarea 
+                                                    readOnly 
+                                                    value={JSON.stringify(npc.tavernData.extensions, null, 2)} 
+                                                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-[9px] font-mono text-slate-300 max-h-32 overflow-y-auto resize-none" 
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="border border-slate-700 p-3 rounded-xl bg-slate-900/50">
+                                    <label className="flex items-center justify-between text-xs mb-2 font-bold text-slate-300"><span>启用固定开场白</span><input type="checkbox" checked={npc.firstMsgEnabled} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, firstMsgEnabled:e.target.checked} : n)}))} className="w-4 h-4 accent-blue-500" /></label>
+                                    <textarea value={npc.firstMsg} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, firstMsg:e.target.value} : n)}))} rows={2} className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs outline-none disabled:opacity-50 resize-none" disabled={!npc.firstMsgEnabled} />
+                                </div>
+
+                                <div className="bg-slate-900/50 p-4 rounded-xl border border-blue-500/20">
+                                    <div className="text-[11px] text-blue-400 font-bold uppercase mb-3 flex items-center">角色独立交互 API</div>
+                                    <div className="flex space-x-2 mb-2">
+                                        <input type="text" placeholder="Base URL" value={npc.apiMain.baseUrl} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, apiMain:{...n.apiMain, baseUrl:e.target.value}} : n)}))} className="flex-1 bg-slate-800 border border-slate-700 rounded-lg text-xs p-2.5 outline-none focus:border-blue-500" />
+                                        <button onClick={()=>fetchModels(`npc_${npc.id}`, npc.apiMain)} className="bg-blue-600/20 text-blue-400 border border-blue-500/50 px-3 rounded-lg text-[10px] font-bold hover:bg-blue-600 hover:text-white transition whitespace-nowrap">
+                                            {apiStatus[`npc_${npc.id}`]?.loading ? '...' : '获取列表'}
+                                        </button>
+                                    </div>
+                                    <input type="password" placeholder="API Key" value={npc.apiMain.apiKey} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, apiMain:{...n.apiMain, apiKey:e.target.value}} : n)}))} className="w-full bg-slate-800 border border-slate-700 rounded-lg text-xs p-2.5 mb-2 outline-none focus:border-blue-500" />
+                                    
+                                    <div className="flex space-x-2 items-center">
+                                        {!npc.apiMain.customModel ? (
+                                            <select value={npc.apiMain.model} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, apiMain:{...n.apiMain, model:e.target.value}} : n)}))} className="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs outline-none focus:border-blue-500 text-slate-200">
+                                                <option value="">-- 选择模型 --</option>
+                                                {(modelLists[`npc_${npc.id}`] || []).map(m => <option key={m} value={m}>{m}</option>)}
+                                            </select>
+                                        ) : (
+                                            <input type="text" placeholder="手动输入模型" value={npc.apiMain.model} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, apiMain:{...n.apiMain, model:e.target.value}} : n)}))} className="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs outline-none focus:border-blue-500 text-slate-200" />
+                                        )}
+                                        <label className="flex items-center text-xs text-slate-400 bg-slate-800 p-2 rounded-lg border border-slate-700 cursor-pointer"><input type="checkbox" checked={npc.apiMain.customModel} onChange={e=>setData(d=>({...d, npcs: d.npcs.map(n=>n.id===npc.id ? {...n, apiMain:{...n.apiMain, customModel:e.target.checked}} : n)}))} className="mr-1"/>手填</label>
+                                    </div>
+                                    {apiStatus[`npc_${npc.id}`]?.msg && <div className="text-[9px] mt-1 text-blue-400">{apiStatus[`npc_${npc.id}`].msg}</div>}
+                                </div>
+
+                                {/* 提示词沙盘透视 */}
+                                <div className="mt-4 bg-black/30 border border-slate-700 rounded-xl overflow-hidden">
+                                    <div className="bg-slate-800/80 p-2 border-b border-slate-700 flex justify-between items-center">
+                                        <div className="text-[11px] font-bold text-emerald-400 flex items-center"><Icon.Eye c="w-4 h-4 mr-1" /> 沙盘透视 (System Prompt)</div>
+                                        <div className="flex space-x-1">
+                                            <button onClick={()=>setPreviewTab('chat')} className={`px-2 py-1 text-[10px] rounded ${previewTab==='chat'?'bg-blue-600 text-white':'bg-slate-700 text-slate-400'}`}>主动聊天流</button>
+                                            <button onClick={()=>setPreviewTab('action')} className={`px-2 py-1 text-[10px] rounded ${previewTab==='action'?'bg-indigo-600 text-white':'bg-slate-700 text-slate-400'}`}>后台行动流</button>
+                                        </div>
+                                    </div>
+                                    <div className="p-3">
+                                        <div className="text-[9px] text-slate-500 mb-2 leading-relaxed">这是目前依据【{previewTab==='chat'?'对话提示词流':'行动提示词流'}】配置，最终拼接后发给 AI 的 System Prompt（未包含对话记录）：</div>
+                                        <textarea readOnly value={previewPrompt} rows={12} className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-[10px] font-mono text-emerald-300/80 outline-none resize-none leading-relaxed no-scrollbar" />
+                                    </div>
+                                </div>
+
+                                {/* 行动日志 */}
+                                <div className="mt-4 bg-indigo-950/30 border border-indigo-500/20 rounded-xl overflow-hidden">
+                                    <div className="bg-slate-800/80 p-3 border-b border-slate-700 flex justify-between items-center">
+                                        <div className="text-[11px] font-bold text-indigo-400 flex items-center"><Icon.Activity c="w-4 h-4 mr-1" /> 行动日志</div>
+                                        <button onClick={()=>{if(confirm('确定清除该角色的所有行动日志？')){setLogs(l=>{const nl={...l}; nl[npc.id] = (nl[npc.id]||[]).filter(x=>x.type!=='action'); return nl;});}}} className="text-[10px] text-red-400 hover:bg-red-900/30 px-2 py-1 rounded">清除</button>
+                                    </div>
+                                    <div className="p-3 max-h-48 overflow-y-auto bg-slate-900/30">
+                                        {((logs[npc.id]||[]).filter(x=>x.type==='action')).length===0 && <div className="text-center text-slate-500 text-[11px] py-4">暂无行动记录</div>}
+                                        {((logs[npc.id]||[]).filter(x=>x.type==='action')).map(msg => (
+                                            <div key={msg.id} className="mb-2 pb-2 border-b border-slate-700/30 last:border-0">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-[10px] text-indigo-400 font-bold">[{msg.time}]</span>
+                                                </div>
+                                                <div className="text-[12px] text-slate-300 leading-relaxed">{msg.content}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        );
+                    })}
+                </div>
+            );
+
+            const renderMapTab = () => {
+                const mapToEdit = data.maps[editMapId] || data.maps['world'];
+                const updateMap = (k, v) => setData(d=>({...d, maps: {...d.maps, [editMapId]: {...d.maps[editMapId], [k]: v}}}));
+
+                const isTileBlocked = (x, y) => {
+                    return (mapToEdit.blockedTiles || []).some(t => t.x === x && t.y === y);
+                };
+
+                const toggleTile = (x, y) => {
+                    const current = mapToEdit.blockedTiles || [];
+                    const index = current.findIndex(t => t.x === x && t.y === y);
+                    let newBlocked;
+                    if (index !== -1) {
+                        newBlocked = current.filter((_, i) => i !== index);
+                    } else {
+                        newBlocked = [...current, { x, y }];
+                    }
+                    updateMap('blockedTiles', newBlocked);
+                };
+
+                const clearAllBlocked = () => {
+                    if (confirm('确定清除所有不可通行区域？')) {
+                        updateMap('blockedTiles', []);
+                    }
+                };
+
+                const moveNodeTo = (nodeId, newX, newY) => {
+                    if (newX < 0 || newX >= mapToEdit.w || newY < 0 || newY >= mapToEdit.h) return;
+                    const nn = [...mapToEdit.nodes];
+                    const idx = nn.findIndex(n => n.id === nodeId);
+                    if (idx !== -1) {
+                        nn[idx] = { ...nn[idx], x: newX, y: newY };
+                        updateMap('nodes', nn);
+                    }
+                };
+
+                const handleNodeMouseDown = (e, node) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setDraggingNode(node.id);
+                };
+
+                const handleNodeTouchStart = (e, node) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    longPressTimerRef.current = setTimeout(() => {
+                        setIsLongPress(true);
+                        setDraggingNode(node.id);
+                    }, 500);
+                };
+
+                const handleNodeTouchMove = (e) => {
+                    if (longPressTimerRef.current) {
+                        clearTimeout(longPressTimerRef.current);
+                        longPressTimerRef.current = null;
+                    }
+                };
+
+                const handleNodeTouchEnd = () => {
+                    if (longPressTimerRef.current) {
+                        clearTimeout(longPressTimerRef.current);
+                        longPressTimerRef.current = null;
+                    }
+                    setTimeout(() => {
+                        setIsLongPress(false);
+                        setDraggingNode(null);
+                    }, 100);
+                };
+
+                const handleTileClick = (e, x, y) => {
+                    if (!draggingNode) {
+                        toggleTile(x, y);
+                    }
+                };
+
+                const handleTileMouseOver = (x, y) => {
+                    if (draggingNode) {
+                        moveNodeTo(draggingNode, x, y);
+                    }
+                };
+
+                const handleTileTouchEnter = (e, x, y) => {
+                    if (draggingNode && isLongPress) {
+                        e.preventDefault();
+                        moveNodeTo(draggingNode, x, y);
+                    }
+                };
+
+                const renderEditorGrid = () => {
+                    const grid = [];
+                    for (let y = 0; y < mapToEdit.h; y++) {
+                        for (let x = 0; x < mapToEdit.w; x++) {
+                            const blocked = isTileBlocked(x, y);
+                            const hasNode = mapToEdit.nodes.find(n => n.x === x && n.y === y);
+                            
+                            grid.push(
+                                <div 
+                                    key={`${x}-${y}`} 
+                                    className={`w-full aspect-square flex items-center justify-center text-xs font-bold cursor-pointer transition-all border border-slate-600/50
+                                        ${blocked ? 'bg-transparent border-dashed border-slate-700/30 text-slate-600' : 'bg-emerald-900/40 hover:bg-emerald-800/50 text-emerald-300'}
+                                        ${hasNode ? 'ring-2 ring-yellow-400' : ''}
+                                        ${draggingNode && !blocked ? 'hover:bg-yellow-900/30' : ''}`}
+                                    onClick={(e) => handleTileClick(e, x, y)}
+                                    onMouseOver={() => handleTileMouseOver(x, y)}
+                                    onTouchStart={(e) => handleTileTouchEnter(e, x, y)}
+                                    title={hasNode ? `${hasNode.name}${hasNode.desc ? ' - ' + hasNode.desc : ''}` : ''}
+                                >
+                                    {hasNode && (
+                                        <div
+                                            className="cursor-grab active:cursor-grabbing select-none"
+                                            onMouseDown={(e) => handleNodeMouseDown(e, hasNode)}
+                                            onTouchStart={(e) => handleNodeTouchStart(e, hasNode)}
+                                            onTouchMove={handleNodeTouchMove}
+                                            onTouchEnd={handleNodeTouchEnd}
+                                        >
+                                            📍
+                                        </div>
+                                    )}
+                                    {!hasNode && blocked ? '✕' : ''}
+                                </div>
+                            );
+                        }
+                    }
+                    return grid;
+                };
+
+                return (
+                    <div className="space-y-4 animate-fade-in">
+                        <div className="flex space-x-2">
+                            <select value={editMapId} onChange={e => setEditMapId(e.target.value)} className="flex-1 bg-slate-800 border border-slate-700 text-slate-200 rounded-xl p-2 outline-none font-bold">
+                                {Object.values(data.maps).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            </select>
+                            <button onClick={() => {
+                                const newId = 'm_' + generateId();
+                                setData(d=>({...d, maps: {...d.maps, [newId]: { id: newId, name: '新区域', w: 5, h: 5, parent: 'world', timeCost: 5, desc: '', nodes: [], blockedTiles: [] }}})); setEditMapId(newId);
+                            }} className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/50 px-3 rounded-xl font-bold hover:bg-emerald-600 hover:text-white"><Icon.Plus c="w-5 h-5"/></button>
+                        </div>
+                        
+                        {mapToEdit && (
+                            <>
+                                <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 shadow-lg space-y-3">
+                                    <div className="flex items-center justify-between border-b border-slate-600 pb-2">
+                                        <input type="text" value={mapToEdit.name} onChange={e => updateMap('name', e.target.value)} className="bg-transparent text-lg font-extrabold text-blue-300 outline-none focus:border-blue-500 w-32"/>
+                                        <button onClick={()=>{ if(editMapId==='world'){alert('无法删除大地图根节点！');return;} if(confirm('确认删除地图？')) { const nm={...data.maps}; delete nm[editMapId]; setData(d=>({...d,maps:nm,currentLevelId:'world'})); setEditMapId('world'); } }} className="text-red-400 p-1"><Icon.Trash c="w-4 h-4"/></button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div><label className="text-[10px] text-slate-500 block">宽(W)</label><input type="number" value={mapToEdit.w} onChange={e=>updateMap('w',Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs outline-none"/></div>
+                                        <div><label className="text-[10px] text-slate-500 block">高(H)</label><input type="number" value={mapToEdit.h} onChange={e=>updateMap('h',Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs outline-none"/></div>
+                                        <div><label className="text-[10px] text-slate-500 block">行动耗时(分)</label><input type="number" value={mapToEdit.timeCost} onChange={e=>updateMap('timeCost',Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs outline-none text-yellow-300"/></div>
+                                    </div>
+                                    <div><label className="text-[10px] text-slate-500 block mb-1">地图宏观描述</label><textarea value={mapToEdit.desc} onChange={e=>updateMap('desc',e.target.value)} rows={2} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs outline-none resize-none"/></div>
+                                </div>
+
+                                <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 shadow-lg">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="font-bold text-sm text-slate-200 flex items-center">
+                                            <span className="mr-2">🗺️ 地图形状编辑器</span>
+                                            <span className="text-[10px] text-slate-400">(点击格子切换可通行状态)</span>
+                                        </h3>
+                                        <button onClick={clearAllBlocked} className="bg-red-600/20 text-red-400 border border-red-500/50 px-2 py-1 rounded text-xs hover:bg-red-600 hover:text-white">清除全部</button>
+                                    </div>
+                                    <div className="flex items-center gap-4 mb-3 text-[11px] text-slate-300">
+                                        <div className="flex items-center gap-1"><div className="w-4 h-4 bg-emerald-900/40 border border-slate-600/50"></div>可通行</div>
+                                        <div className="flex items-center gap-1"><div className="w-4 h-4 bg-transparent border border-dashed border-slate-700/30 flex items-center justify-center text-xs text-slate-600">✕</div>已移除</div>
+                                        <div className="flex items-center gap-1"><span>📍</span>有地标</div>
+                                    </div>
+                                    <div 
+                                        className="grid gap-1 p-2 bg-slate-900/50 rounded-xl"
+                                        style={{ gridTemplateColumns: `repeat(${mapToEdit.w}, minmax(0, 1fr))` }}
+                                        onMouseUp={() => setDraggingNode(null)}
+                                        onMouseLeave={() => setDraggingNode(null)}
+                                    >
+                                        {renderEditorGrid()}
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 shadow-lg">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="font-bold text-sm text-slate-200">特殊地块 (节点)</h3>
+                                        <div className="flex gap-2">
+                                        <button onClick={()=>{const nn=[...mapToEdit.nodes, {id:'n_'+generateId(), name:'新地标', x:0, y:0, targetLevel:'', targetX:0, targetY:0, desc:''}]; updateMap('nodes', nn);}} className="bg-slate-700 text-blue-300 px-2 py-1 rounded text-xs hover:bg-slate-600">+ 添加地块</button>
+                                    </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {mapToEdit.nodes.map((n, i) => (
+                                            <div key={n.id} className="bg-slate-900/80 p-3 rounded-xl border border-slate-700">
+                                                <div className="flex justify-between mb-2">
+                                                    <input type="text" value={n.name} onChange={e=>{const nn=[...mapToEdit.nodes]; nn[i].name=e.target.value; updateMap('nodes', nn);}} className="bg-transparent font-bold text-sm border-b border-slate-600 outline-none w-20 text-blue-200"/>
+                                                    <button onClick={()=>{const nn=mapToEdit.nodes.filter(x=>x.id!==n.id); updateMap('nodes', nn);}} className="text-red-500"><Icon.Trash c="w-3.5 h-3.5"/></button>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                                    <div><span className="text-[10px] text-slate-500">当前坐标 X</span><input type="number" value={n.x} onChange={e=>{const nn=[...mapToEdit.nodes]; nn[i].x=Number(e.target.value); updateMap('nodes', nn);}} className="w-full bg-slate-800 border border-slate-700 rounded p-1 text-xs outline-none"/></div>
+                                                    <div><span className="text-[10px] text-slate-500">当前坐标 Y</span><input type="number" value={n.y} onChange={e=>{const nn=[...mapToEdit.nodes]; nn[i].y=Number(e.target.value); updateMap('nodes', nn);}} className="w-full bg-slate-800 border border-slate-700 rounded p-1 text-xs outline-none"/></div>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-2 mb-2">
+                                                    <div>
+                                                        <span className="text-[10px] text-slate-500">传送至</span>
+                                                        <select value={n.targetLevel} onChange={e=>{const nn=[...mapToEdit.nodes]; nn[i].targetLevel=e.target.value; updateMap('nodes', nn);}} className="w-full bg-slate-800 border border-slate-700 rounded p-1 text-[10px] outline-none text-emerald-300"><option value="">无</option>{Object.values(data.maps).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>
+                                                    </div>
+                                                    <div><span className="text-[10px] text-slate-500">落点 X</span><input type="number" value={n.targetX || 0} onChange={e=>{const nn=[...mapToEdit.nodes]; nn[i].targetX=Number(e.target.value); updateMap('nodes', nn);}} className="w-full bg-slate-800 border border-slate-700 rounded p-1 text-xs outline-none"/></div>
+                                                    <div><span className="text-[10px] text-slate-500">落点 Y</span><input type="number" value={n.targetY || 0} onChange={e=>{const nn=[...mapToEdit.nodes]; nn[i].targetY=Number(e.target.value); updateMap('nodes', nn);}} className="w-full bg-slate-800 border border-slate-700 rounded p-1 text-xs outline-none"/></div>
+                                                </div>
+                                                {n.targetLevel && (
+                                                    <div className="mb-2">
+                                                        <button onClick={()=>{
+                                                            const targetMapId = n.targetLevel;
+                                                            const targetMap = data.maps[targetMapId];
+                                                            if (!targetMap) return;
+                                                            let tx = n.targetX || 0;
+                                                            let ty = n.targetY || 0;
+                                                            if (tx === 0 && ty === 0) {
+                                                                tx = Math.floor(targetMap.w / 2);
+                                                                ty = Math.floor(targetMap.h / 2);
+                                                            }
+                                                            const backNode = {
+                                                                id: 'n_' + generateId(),
+                                                                name: '返回' + mapToEdit.name,
+                                                                x: tx,
+                                                                y: ty,
+                                                                targetLevel: editMapId,
+                                                                targetX: n.x,
+                                                                targetY: n.y,
+                                                                desc: '返回 ' + mapToEdit.name + ' 的传送点。'
+                                                            };
+                                                            const updatedTargetNodes = [...targetMap.nodes, backNode];
+                                                            setData(prev => ({
+                                                                ...prev,
+                                                                maps: {
+                                                                    ...prev.maps,
+                                                                    [targetMapId]: {
+                                                                        ...prev.maps[targetMapId],
+                                                                        nodes: updatedTargetNodes
+                                                                    }
+                                                                }
+                                                            }));
+                                                        }} className="w-full bg-indigo-600/20 text-indigo-300 border border-indigo-500/50 px-2 py-1 rounded text-xs hover:bg-indigo-600 hover:text-white">+ 创建双向传送（在目标地图添加返回点）</button>
+                                                    </div>
+                                                )}
+                                                <input type="text" value={n.desc} placeholder="细节描述 (AI可见)" onChange={e=>{const nn=[...mapToEdit.nodes]; nn[i].desc=e.target.value; updateMap('nodes', nn);}} className="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs outline-none text-slate-300"/>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderDataTab = () => (
+                <div className="flex flex-col items-center justify-center space-y-6 pt-6 animate-fade-in">
+                    <Icon.Settings c="w-16 h-16 text-slate-600 mb-2" />
+                    <div className="text-center px-6 text-slate-400 text-sm leading-relaxed mb-4">
+                        备份并导出包含所有设置、对话和小说记录。<br/>直接将导出的长文本粘贴给他人即可分享剧本。
+                    </div>
+                    <button onClick={exportData} className="w-3/4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg transition-all active:scale-95">📦 导出所有数据</button>
+                    <button onClick={importData} className="w-3/4 bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-200 font-bold py-3 rounded-xl transition-all active:scale-95">📥 导入数据</button>
+                    <div className="mt-8 w-full border-t border-red-900/50 pt-6 text-center">
+                        <button onClick={()=>{if(confirm("确定清空所有数据？不可恢复！")){localStorage.clear();window.location.reload();}}} className="text-red-500 text-xs font-bold bg-red-900/10 px-4 py-2 rounded-lg border border-red-900/30">⚠️ 硬重置系统 (清空缓存)</button>
+                    </div>
+                </div>
+            );
+
+            // --- 组装渲染设置主界面 ---
+            const renderSettings = () => {
+                const tabs = [
+                    { id: 'globalApi', label: '上帝API', icon: Icon.Settings },
+                    { id: 'system', label: '系统配置', icon: Icon.Clock },
+                    { id: 'prompts', label: '提示词流', icon: Icon.Menu },
+                    { id: 'world', label: '世界书', icon: Icon.Book },
+                    { id: 'player', label: '玩家', icon: Icon.User },
+                    { id: 'npcs', label: '角色', icon: Icon.Female },
+                    { id: 'map', label: '地图', icon: Icon.Map },
+                    { id: 'data', label: '数据', icon: Icon.Trash }
+                ];
+
+                return (
+                    <div className="flex flex-col h-full w-full sm:max-w-2xl mx-auto sm:py-6 animate-slide-up">
+                        <div className="flex-1 flex flex-col glass-panel sm:rounded-3xl overflow-hidden shadow-2xl">
+                            <div className="flex items-center justify-between p-4 bg-slate-800/90 border-b border-slate-700/50 shrink-0">
+                                <h2 className="text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-100 to-slate-400">控制面板</h2>
+                                <button onClick={() => setView('game')} className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-4 py-1.5 rounded-xl text-sm font-bold hover:bg-blue-600 hover:text-white">关闭</button>
+                            </div>
+                            <div className="flex flex-wrap bg-slate-900/80 border-b border-slate-700/50 shrink-0 p-1">
+                                {tabs.map(t => (
+                                    <button key={t.id} onClick={() => setSettingsTab(t.id)} className={`w-1/4 sm:flex-1 py-2 px-1 text-[10px] sm:text-xs font-bold flex flex-col items-center justify-center rounded-lg transition-all ${settingsTab===t.id ? 'bg-slate-700 text-blue-400' : 'text-slate-500 hover:text-slate-300'}`}>
+                                        <t.icon c="w-4 h-4 mb-1"/>{t.label}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-900/30 pb-12 space-y-6">
+                                {settingsTab === 'globalApi' && renderGlobalApiTab()}
+                                {settingsTab === 'system' && renderSystemTab()}
+                                {settingsTab === 'prompts' && renderPromptsTab()}
+                                {settingsTab === 'world' && renderWorldbooksTab()}
+                                {settingsTab === 'player' && renderPlayerTab()}
+                                {settingsTab === 'npcs' && renderNpcsTab()}
+                                {settingsTab === 'map' && renderMapTab()}
+                                {settingsTab === 'data' && renderDataTab()}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="w-full h-full">
+                    {view === 'game' && renderGame()}
+                    {view === 'chat' && renderChat()}
+                    {view === 'calendar' && renderCalendar()}
+                    {view === 'settings' && renderSettings()}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
