@@ -396,15 +396,15 @@
             
             const getRelevantMemories = (npcId, context = '', limit = 5) => {
                 const npc = data.npcs.find(n => n.id === npcId);
-                if (!npc) return [];
+                if (!npc || !npc.memorySystem) return [];
                 
                 // 合并所有记忆
                 const allMemories = [
-                    ...npc.memorySystem.coreMemories,
-                    ...npc.memorySystem.importantMemories,
-                    ...npc.memorySystem.recentMemories,
-                    ...npc.memorySystem.minorMemories,
-                    ...npc.memorySystem.trivialMemories
+                    ...(npc.memorySystem.coreMemories || []),
+                    ...(npc.memorySystem.importantMemories || []),
+                    ...(npc.memorySystem.recentMemories || []),
+                    ...(npc.memorySystem.minorMemories || []),
+                    ...(npc.memorySystem.trivialMemories || [])
                 ];
                 
                 // 根据相关性排序
@@ -525,7 +525,7 @@
                         }
                     }
                     
-                    envFull = `[当前位置]: ${cMap.name} (尺寸: ${cMap.w}x${cMap.h})\n[环境描述]: ${cMap.desc}\n[周围可见地标]: ${cMap.nodes.map(n=>`${n.name}(坐标:${n.x},${n.y})`).join(', ') || '暂无'}\n[系统时间]: ${formatTime(data.time)}\n[角色私有记忆]: ${npc.memory || '无特殊记忆'}${memoryContext}\n[当前坐标]: X:${npc.x}, Y:${npc.y}`;
+                    envFull = `[当前位置]: ${cMap.name} (尺寸: ${cMap.w}x${cMap.h})\n[环境描述]: ${cMap.desc}\n[周围可见地标]: ${(cMap.nodes || []).map(n=>`${n.name}(坐标:${n.x},${n.y})`).join(', ') || '暂无'}\n[系统时间]: ${formatTime(data.time)}\n[角色私有记忆]: ${npc.memory || '无特殊记忆'}${memoryContext}\n[当前坐标]: X:${npc.x}, Y:${npc.y}`;
                     charFull = `[角色设定: ${npc.name}]\n` + 
                                (npc.desc ? `描述: ${npc.desc}\n` : '') + 
                                (npc.personality ? `性格: ${npc.personality}\n` : '') + 
@@ -593,7 +593,7 @@
                         finalPrompt += `\n${processTavernMacros(content)}\n`;
                     }
                     else if(block.type === 'worldbook') {
-                        const wbContent = data.worldbooks.filter(w=>w.enabled).map(w=>processTavernMacros(w.content)).join('\n');
+                        const wbContent = (data.worldbooks || []).filter(w=>w.enabled).map(w=>processTavernMacros(w.content)).join('\n');
                         if(wbContent) finalPrompt += `\n[世界设定]\n${wbContent}\n`;
                     }
                     else if(block.type === 'character' && npc) finalPrompt += `\n${processTavernMacros(charFull)}\n`;
@@ -2436,19 +2436,19 @@
                                                 let memories = [];
                                                 switch(npcPreviewTabs[npc.id]) {
                                                     case 'memory5':
-                                                        memories = npc.memorySystem.coreMemories;
+                                                        memories = npc.memorySystem?.coreMemories || [];
                                                         break;
                                                     case 'memory4':
-                                                        memories = npc.memorySystem.importantMemories;
+                                                        memories = npc.memorySystem?.importantMemories || [];
                                                         break;
                                                     case 'memory3':
-                                                        memories = npc.memorySystem.recentMemories;
+                                                        memories = npc.memorySystem?.recentMemories || [];
                                                         break;
                                                     case 'memory2':
-                                                        memories = npc.memorySystem.minorMemories;
+                                                        memories = npc.memorySystem?.minorMemories || [];
                                                         break;
                                                     case 'memory1':
-                                                        memories = npc.memorySystem.trivialMemories;
+                                                        memories = npc.memorySystem?.trivialMemories || [];
                                                         break;
                                                     default:
                                                         memories = [];
